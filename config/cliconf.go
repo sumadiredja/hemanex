@@ -53,7 +53,20 @@ func CliConfig(app *cli.App) *cli.App {
 			Name:    "image",
 			Aliases: []string{"img"},
 			Usage:   "Manage Docker Images",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "username, u",
+					Usage: "Nexus credentials username",
+				},
+				cli.BoolFlag{
+					Name:  "password, p",
+					Usage: "Get password from cli",
+				},
+			},
 			Subcommands: []cli.Command{
+				// remove
+
+				// end remove
 				{
 					Name:    "list",
 					Aliases: []string{"ls"},
