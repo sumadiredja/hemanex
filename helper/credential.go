@@ -21,18 +21,23 @@ func GetCredentialPath() (string, error) {
 		}
 		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
 	} else {
-		if _, err := os.Stat("/opt/hemanex"); os.IsNotExist(err) {
-			if os.Mkdir("/opt/hemanex", 0755) != nil {
-				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: please run as superuser (sudo) \nExample : sudo hemanex login <flags>")), 1)
+		userHomeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
+		}
+
+		var hemanexUserConfigDir string = userHomeDir + "/.config/hemanex"
+
+		if _, err := os.Stat(hemanexUserConfigDir); os.IsNotExist(err) {
+			if os.Mkdir(hemanexUserConfigDir, 0755) != nil {
+				return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
 			}
 
-			if os.Chmod("/opt/hemanex", 0755) != nil {
-				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: please run as superuser (sudo) \nExample : sudo hemanex login <flags>")), 1)
+			if os.Chmod(hemanexUserConfigDir, 0755) != nil {
+				return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
 			}
 		}
-		CREDENTIALS_FILE = "/opt/hemanex/.credentials"
+		CREDENTIALS_FILE = hemanexUserConfigDir + "/.credentials"
 	}
-
 	return CREDENTIALS_FILE, nil
-
 }
