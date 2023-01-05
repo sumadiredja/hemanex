@@ -55,7 +55,7 @@ func NewRegistry(cli_context *cli.Context) (Registry, error) {
 	}
 
 	if _, err := os.Stat(CREDENTIALS_FILE); os.IsNotExist(err) {
-		return r, fmt.Errorf("User not logged in")
+		return r, helper.CliErrorGen(fmt.Errorf("User not logged in"), 1)
 	} else if err != nil {
 		return r, err
 	}
