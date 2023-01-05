@@ -28,11 +28,43 @@ func CliConfig(app *cli.App) *cli.App {
 	}
 	app.Commands = []cli.Command{
 		{
-			Name:    "configure",
-			Aliases: []string{"c"},
-			Usage:   "Configure Nexus Credentials",
+			Name:    "login",
+			Aliases: []string{"lgn"},
+			Usage:   "Login to nexus repository",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "nexus-host, host",
+					Usage: "Nexus hostname",
+				},
+				cli.StringFlag{
+					Name:  "repository-name, r",
+					Usage: "Nexus repository name",
+				},
+				cli.StringFlag{
+					Name:  "username, u",
+					Usage: "Nexus credentials username",
+				},
+				cli.StringFlag{
+					Name:  "password, p",
+					Usage: "Nexus credentials password",
+				},
+			},
 			Action: func(c *cli.Context) error {
 				return menu.SetNexusCredentials(c)
+			},
+		},
+		{
+			Name:    "namespace",
+			Aliases: []string{"ns"},
+			Usage:   "Login to nexus repository",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "repository-name, r",
+					Usage: "Nexus repository name",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return menu.GetNamespace(c)
 			},
 		},
 		{
