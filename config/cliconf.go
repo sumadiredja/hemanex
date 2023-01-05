@@ -49,6 +49,10 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "password, p",
 					Usage: "Nexus credentials password",
 				},
+				cli.StringFlag{
+					Name:  "namespace, n",
+					Usage: "Nexus namespace",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return menu.SetNexusCredentials(c)
@@ -62,6 +66,20 @@ func CliConfig(app *cli.App) *cli.App {
 				cli.StringFlag{
 					Name:  "repository-name, r",
 					Usage: "Nexus repository name",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return menu.GetRepository(c)
+			},
+		},
+		{
+			Name:    "namespace",
+			Aliases: []string{"ns"},
+			Usage:   "Change build namespace",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "namespace-name, n",
+					Usage: "Nexus namespace",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -179,6 +197,23 @@ func CliConfig(app *cli.App) *cli.App {
 						return menu.ShowTotalImageSize(c)
 					},
 				},
+			},
+		},
+		{
+			Name:    "push",
+			Usage:   "Push an image to Nexus Repository",
+			Aliases: []string{"pu"},
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name: "port, p",
+				},
+				cli.BoolFlag{
+					Name:  "insecure-registry, k",
+					Usage: "Turn on insecure registries",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return menu.PushImage(c)
 			},
 		},
 	}

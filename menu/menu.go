@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"strings"
 
 	"hemanex/registry"
 
@@ -11,6 +12,7 @@ import (
 
 	b64 "encoding/base64"
 
+	"github.com/estebangarcia21/subprocess"
 	"github.com/urfave/cli"
 )
 
@@ -20,11 +22,12 @@ nexus_host = "{{ .Host }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
 nexus_repository = "{{ .Repository }}"
+nexus_namespace = "{{ .Namespace }}"
 `
 )
 
 func SetNexusCredentials(c *cli.Context) error {
-	var hostname, repository, username, password string
+	var hostname, repository, username, password, namespace string
 	var CREDENTIALS_FILE string
 	var err error
 	var tmpl *template.Template
@@ -38,6 +41,8 @@ func SetNexusCredentials(c *cli.Context) error {
 	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
 	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
 	username = helper.GetInputOrFlags(c.String("username"), "Username")
+	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace")
+
 	if password, err = helper.GetPassword(c.String("password")); err != nil {
 		return err
 	}
@@ -47,11 +52,13 @@ func SetNexusCredentials(c *cli.Context) error {
 		Username   string
 		Password   string
 		Repository string
+		Namespace  string
 	}{
 		hostname,
 		username,
 		password,
 		repository,
+		namespace,
 	}
 
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
@@ -80,13 +87,13 @@ func CheckToml(c *cli.Context) error {
 		return helper.CliErrorGen(err, 1)
 
 	}
-	fmt.Println(r.Host, r.Password, r.Repository, r.Username)
+	fmt.Println(r.Host, r.Password, r.Repository, r.Username, r.Namespace)
 	// fmt.Println(c.Bool("insecure-registry"))
 	// fmt.Println(r.Host)
 	return nil
 }
 
-func GetNamespace(c *cli.Context) error {
+func GetRepository(c *cli.Context) error {
 	var r registry.Registry
 	var err error
 	var CREDENTIALS_FILE string
@@ -107,11 +114,13 @@ func GetNamespace(c *cli.Context) error {
 			Username   string
 			Password   string
 			Repository string
+			Namespace  string
 		}{
 			r.Host,
 			r.Username,
 			b64.StdEncoding.EncodeToString([]byte(r.Password)),
 			c.String("repository-name"),
+			r.Namespace,
 		}
 
 		if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
@@ -130,6 +139,54 @@ func GetNamespace(c *cli.Context) error {
 		return nil
 	}
 	helper.CliInfoVerbose(fmt.Sprintf("Currently working in %s repository", r.Repository))
+	return nil
+}
+
+func GetNamespace(c *cli.Context) error {
+	var r registry.Registry
+	var err error
+	var CREDENTIALS_FILE string
+	var tmpl *template.Template
+	var f *os.File
+
+	if r, err = registry.NewRegistry(c); err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
+		return err
+	}
+
+	if c.String("namespace-name") != "" {
+		data := struct {
+			Host       string
+			Username   string
+			Password   string
+			Repository string
+			Namespace  string
+		}{
+			r.Host,
+			r.Username,
+			b64.StdEncoding.EncodeToString([]byte(r.Password)),
+			r.Repository,
+			c.String("namespace-name"),
+		}
+		if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
+
+		if f, err = os.Create(CREDENTIALS_FILE); err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
+
+		if err = tmpl.Execute(f, data); err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
+
+		helper.CliSuccessVerbose(fmt.Sprintf("Namespace changed to %s", c.String("namespace-name")))
+		return nil
+	}
+	helper.CliInfoVerbose(fmt.Sprintf("Current namespace is %s", r.Namespace))
 	return nil
 }
 
@@ -277,5 +334,42 @@ func ShowTotalImageSize(c *cli.Context) error {
 		}
 		fmt.Printf("%d %s\n", totalSize, imgName)
 	}
+	return nil
+}
+
+func PushImage(c *cli.Context) error {
+	var imgName = c.Args().Get(0)
+	var port = c.String("port")
+	var isInsecure = c.Bool("insecure-registry")
+
+	if imgName == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if port == "" {
+		port = "50003"
+	}
+
+	if isInsecure {
+		imgName = imgName + " --tls-verify=false"
+	}
+
+	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+r.Namespace+"/"+imgName, subprocess.Shell)
+
+	if err = pushImage.Exec(); err != nil {
+		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
+		return helper.CliErrorGen(err, 1)
+	}
+
+	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
+
+	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + r.Namespace)
+
 	return nil
 }

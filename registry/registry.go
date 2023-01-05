@@ -21,6 +21,7 @@ type Registry struct {
 	Username   string `toml:"nexus_username"`
 	Password   string `toml:"nexus_password"`
 	Repository string `toml:"nexus_repository"`
+	Namespace  string `toml:"nexus_namespace"`
 }
 
 type Repositories struct {
