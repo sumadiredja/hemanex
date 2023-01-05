@@ -35,9 +35,9 @@ func SetNexusCredentials(c *cli.Context) error {
 		return err
 	}
 
-	hostname = helper.GetInputOrFlags(c.String("nexus-host"))
-	repository = helper.GetInputOrFlags(c.String("repository-name"))
-	username = helper.GetInputOrFlags(c.String("username"))
+	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
+	username = helper.GetInputOrFlags(c.String("username"), "Username")
 	if password, err = helper.GetPassword(c.String("password")); err != nil {
 		return err
 	}

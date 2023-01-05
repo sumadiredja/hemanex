@@ -9,12 +9,12 @@ import (
 	"golang.org/x/term"
 )
 
-func GetInputOrFlags(flags string) string {
+func GetInputOrFlags(flags string, input string) string {
 	var user_input string
 	if flags != "" {
 		user_input = flags
 	} else {
-		fmt.Print("Enter Nexus Host: ")
+		fmt.Printf("Enter Nexus %s: ", input)
 		fmt.Scan(&user_input)
 	}
 	return user_input
