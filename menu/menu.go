@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"strings"
 
 	"hemanex/registry"
 
@@ -17,10 +18,10 @@ import (
 const (
 	CREDENTIALS_TEMPLATES = `# Nexus Credentials
 nexus_host = "{{ .Host }}"
-nexus_username = "{{ .Username }}"
-nexus_password = "{{ .Password }}"
 nexus_repository = "{{ .Repository }}"
 nexus_namespace = "{{ .Namespace }}"
+nexus_username = "{{ .Username }}"
+nexus_password = "{{ .Password }}"
 `
 )
 
@@ -38,8 +39,8 @@ func SetNexusCredentials(c *cli.Context) error {
 
 	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
 	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
-	username = helper.GetInputOrFlags(c.String("username"), "Username")
 	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace")
+	username = helper.GetInputOrFlags(c.String("username"), "Username")
 
 	if password, err = helper.GetPassword(c.String("password")); err != nil {
 		return err
@@ -332,5 +333,45 @@ func ShowTotalImageSize(c *cli.Context) error {
 		}
 		fmt.Printf("%d %s\n", totalSize, imgName)
 	}
+	return nil
+}
+
+func BuildImage(c *cli.Context) error {
+	var image_name, tag string
+	cwd := c.Args().Get(0)
+	var port = c.String("port")
+	tags := c.String("tags")
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if tags == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	if cwd == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	tag_split := strings.Split(tags, ":")
+	if len(tag_split) <= 1 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	image_name = tag_split[0]
+	tag = tag_split[1]
+	if tag == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	if port == "" {
+		port = "50003"
+	}
+	host := strings.Split(r.Host, "://")[1]
+	command := fmt.Sprintf("%s:%s/%s/%s:%s %s", host, port, r.Namespace, image_name, tag, cwd)
+	fmt.Printf("docker build -t %s", command)
+
 	return nil
 }

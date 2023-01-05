@@ -101,6 +101,24 @@ func CliConfig(app *cli.App) *cli.App {
 			},
 		},
 		{
+			Name:    "build",
+			Usage:   "Building image in nexus repository",
+			Aliases: []string{"b"},
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "port, p",
+					Usage: "Image port",
+				},
+				cli.StringFlag{
+					Name:  "tags, t",
+					Usage: "Image tags <image_name>:<tag>",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return menu.BuildImage(c)
+			},
+		},
+		{
 			Name:    "image",
 			Aliases: []string{"img"},
 			Usage:   "Manage Docker Images",
