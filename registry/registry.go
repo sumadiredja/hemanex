@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	b64 "encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hemanex/helper"
 	"html"
@@ -46,10 +45,12 @@ type LayerInfo struct {
 }
 
 func NewRegistry(cli_context *cli.Context) (Registry, error) {
-	r := Registry{}
-	CREDENTIALS_FILE, err := helper.GetCredentialPath()
+	var CREDENTIALS_FILE string
+	var err error
 
-	if err != nil {
+	r := Registry{}
+
+	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
 		return r, err
 	}
 
@@ -70,6 +71,7 @@ func NewRegistry(cli_context *cli.Context) (Registry, error) {
 	if cli_context.Bool("insecure-registry") {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+
 	return r, nil
 }
 
@@ -88,10 +90,11 @@ func (r Registry) ListImages() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP Code: %d", resp.StatusCode))
+		return nil, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
 	var repositories Repositories
@@ -118,7 +121,7 @@ func (r Registry) ListTagsByImage(image string) ([]string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP Code: %d", resp.StatusCode))
+		return nil, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
 	var imageTags ImageTags
@@ -146,7 +149,7 @@ func (r Registry) ImageManifest(image string, tag string) (ImageManifest, error)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return imageManifest, errors.New(fmt.Sprintf("HTTP Code: %d", resp.StatusCode))
+		return imageManifest, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
 	json.NewDecoder(resp.Body).Decode(&imageManifest)
@@ -177,10 +180,10 @@ func (r Registry) DeleteImageByTag(image string, tag string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 202 {
-		return errors.New(fmt.Sprintf("HTTP Code: %d", resp.StatusCode))
+		return helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
-	fmt.Printf("%s:%s has been successful deleted\n", image, tag)
+	helper.CliSuccessVerbose(fmt.Sprintf("%s:%s has been successful deleted\n", image, tag))
 
 	return nil
 }
@@ -203,7 +206,7 @@ func (r Registry) getImageSHA(image string, tag string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("HTTP Code: %d", resp.StatusCode))
+		return "", helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
 	return resp.Header.Get("docker-content-digest"), nil
