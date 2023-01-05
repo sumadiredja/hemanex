@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hemanex/helper"
 	"html"
 	"net/http"
 	"os"
@@ -15,7 +16,6 @@ import (
 )
 
 const ACCEPT_HEADER = "application/vnd.docker.distribution.manifest.v2+json"
-const CREDENTIALS_FILE = ".credentials"
 
 type Registry struct {
 	Host       string `toml:"nexus_host"`
@@ -46,9 +46,47 @@ type LayerInfo struct {
 }
 
 func NewRegistry(cli_context *cli.Context) (Registry, error) {
+	var CREDENTIALS_FILE string
 	r := Registry{}
+
+	if helper.IsWindows() {
+		_, err := os.Stat(os.Getenv("AppData") + "\\hemanex")
+		if err != nil {
+			return r, cli.NewExitError(err.Error(), 1)
+		}
+
+		if os.IsNotExist(err) {
+			err := os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666)
+			if err != nil {
+				return r, cli.NewExitError(err.Error(), 1)
+			}
+
+			err = os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666)
+			if err != nil {
+				return r, cli.NewExitError(err.Error(), 1)
+			}
+		}
+		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
+	} else {
+		_, err := os.Stat("/etc/hemanex")
+		if err != nil {
+			return r, cli.NewExitError(err.Error(), 1)
+		}
+		if os.IsNotExist(err) {
+			err := os.Mkdir("/etc/hemanex", 0666)
+			if err != nil {
+				return r, cli.NewExitError(err.Error(), 1)
+			}
+			err = os.Chmod("/etc/hemanex", 0666)
+			if err != nil {
+				return r, cli.NewExitError(err.Error(), 1)
+			}
+		}
+		CREDENTIALS_FILE = "/etc/hemanex/.credentials"
+	}
+
 	if _, err := os.Stat(CREDENTIALS_FILE); os.IsNotExist(err) {
-		return r, fmt.Errorf("%s file not found", CREDENTIALS_FILE)
+		return r, fmt.Errorf("User not logged in")
 	} else if err != nil {
 		return r, err
 	}
