@@ -382,3 +382,40 @@ func BuildImage(c *cli.Context) error {
 
 	return nil
 }
+
+func PushImage(c *cli.Context) error {
+	var imgName = c.Args().Get(0)
+	var port = c.String("port")
+	var isInsecure = c.Bool("insecure-registry")
+
+	if imgName == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if port == "" {
+		port = "50003"
+	}
+
+	if isInsecure {
+		imgName = imgName + " --tls-verify=false"
+	}
+
+	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+r.Namespace+"/"+imgName, subprocess.Shell)
+
+	if err = pushImage.Exec(); err != nil {
+		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
+		return helper.CliErrorGen(err, 1)
+	}
+
+	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
+
+	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + r.Namespace)
+
+	return nil
+}
