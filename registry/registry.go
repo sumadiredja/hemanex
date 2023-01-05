@@ -46,43 +46,11 @@ type LayerInfo struct {
 }
 
 func NewRegistry(cli_context *cli.Context) (Registry, error) {
-	var CREDENTIALS_FILE string
 	r := Registry{}
+	CREDENTIALS_FILE, err := helper.GetCredentialPath()
 
-	if helper.IsWindows() {
-		_, err := os.Stat(os.Getenv("AppData") + "\\hemanex")
-		if err != nil {
-			return r, cli.NewExitError(err.Error(), 1)
-		}
-
-		if os.IsNotExist(err) {
-			err := os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666)
-			if err != nil {
-				return r, cli.NewExitError(err.Error(), 1)
-			}
-
-			err = os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666)
-			if err != nil {
-				return r, cli.NewExitError(err.Error(), 1)
-			}
-		}
-		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
-	} else {
-		_, err := os.Stat("/etc/hemanex")
-		if err != nil {
-			return r, cli.NewExitError(err.Error(), 1)
-		}
-		if os.IsNotExist(err) {
-			err := os.Mkdir("/etc/hemanex", 0666)
-			if err != nil {
-				return r, cli.NewExitError(err.Error(), 1)
-			}
-			err = os.Chmod("/etc/hemanex", 0666)
-			if err != nil {
-				return r, cli.NewExitError(err.Error(), 1)
-			}
-		}
-		CREDENTIALS_FILE = "/etc/hemanex/.credentials"
+	if err != nil {
+		return r, err
 	}
 
 	if _, err := os.Stat(CREDENTIALS_FILE); os.IsNotExist(err) {
