@@ -11,7 +11,7 @@ import (
 func CliConfig(app *cli.App) *cli.App {
 	app.Name = "hemanex"
 	app.Usage = "Manage Docker Private Registry on Nexus"
-	app.Version = "1.0.0-beta"
+	app.Version = "1.0.0-alpha"
 	app.Authors = []cli.Author{
 		{
 			Name:  "Robby Hemawan P <pramuditorh>",
@@ -54,9 +54,9 @@ func CliConfig(app *cli.App) *cli.App {
 			},
 		},
 		{
-			Name:    "namespace",
-			Aliases: []string{"ns"},
-			Usage:   "Login to nexus repository",
+			Name:    "repository",
+			Aliases: []string{"rp"},
+			Usage:   "Change nexus repository config",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "repository-name, r",
