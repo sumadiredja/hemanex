@@ -113,6 +113,10 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "tags, t",
 					Usage: "Image tags <image_name>:<tag>",
 				},
+				cli.StringFlag{
+					Name:  "namespace, n",
+					Usage: "Overwrite namespace",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return menu.BuildImage(c)
@@ -228,6 +232,10 @@ func CliConfig(app *cli.App) *cli.App {
 				cli.BoolFlag{
 					Name:  "insecure-registry, k",
 					Usage: "Turn on insecure registries",
+				},
+				cli.StringFlag{
+					Name:  "namespace, n",
+					Usage: "Overwrite namespace",
 				},
 			},
 			Action: func(c *cli.Context) error {

@@ -346,7 +346,11 @@ func BuildImage(c *cli.Context) error {
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
+	var namespace = r.Namespace
 
+	if c.String("namespace") != "" {
+		namespace = c.String("namespace")
+	}
 	if tags == "" {
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -371,8 +375,7 @@ func BuildImage(c *cli.Context) error {
 		port = "50003"
 	}
 	host := strings.Split(r.Host, "://")[1]
-	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, r.Namespace, image_name, tag, cwd)
-
+	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, namespace, image_name, tag, cwd)
 	s := subprocess.New(command, subprocess.Shell)
 
 	if err := s.Exec(); err != nil {
@@ -387,6 +390,7 @@ func PushImage(c *cli.Context) error {
 	var imgName = c.Args().Get(0)
 	var port = c.String("port")
 	var isInsecure = c.Bool("insecure-registry")
+	var namespace string
 
 	if imgName == "" {
 		cli.ShowSubcommandHelp(c)
@@ -398,6 +402,11 @@ func PushImage(c *cli.Context) error {
 		return helper.CliErrorGen(err, 1)
 	}
 
+	namespace = r.Namespace
+	if c.String("namespace") != "" {
+		namespace = c.String("namespace")
+	}
+
 	if port == "" {
 		port = "50003"
 	}
@@ -406,7 +415,7 @@ func PushImage(c *cli.Context) error {
 		imgName = imgName + " --tls-verify=false"
 	}
 
-	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+r.Namespace+"/"+imgName, subprocess.Shell)
+	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+namespace+"/"+imgName, subprocess.Shell)
 
 	if err = pushImage.Exec(); err != nil {
 		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
