@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-
-	"github.com/urfave/cli"
 )
 
 func GetCredentialPath() (string, error) {
@@ -14,26 +12,25 @@ func GetCredentialPath() (string, error) {
 	if IsWindows() {
 		if _, err := os.Stat(os.Getenv("AppData") + "\\hemanex"); os.IsNotExist(err) {
 			if os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: %s", err)), 1)
 			}
 
 			if os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
-
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: %s", err)), 1)
 			}
 		}
 		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
 	} else {
-		if _, err := os.Stat("/etc/hemanex"); os.IsNotExist(err) {
-			if os.Mkdir("/etc/hemanex", 0666) != nil {
-				return "", cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		if _, err := os.Stat("/opt/hemanex"); os.IsNotExist(err) {
+			if os.Mkdir("/opt/hemanex", 0755) != nil {
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: please run as superuser (sudo) \nExample : sudo hemanex login <flags>")), 1)
 			}
 
-			if os.Chmod("/etc/hemanex", 0666) != nil {
-				return "", cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+			if os.Chmod("/opt/hemanex", 0755) != nil {
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: please run as superuser (sudo) \nExample : sudo hemanex login <flags>")), 1)
 			}
 		}
-		CREDENTIALS_FILE = "/etc/hemanex/.credentials"
+		CREDENTIALS_FILE = "/opt/hemanex/.credentials"
 	}
 
 	return CREDENTIALS_FILE, nil

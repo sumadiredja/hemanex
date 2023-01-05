@@ -1,11 +1,9 @@
 package menu
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"os"
-	"syscall"
 
 	"hemanex/registry"
 
@@ -14,7 +12,6 @@ import (
 	b64 "encoding/base64"
 
 	"github.com/urfave/cli"
-	"golang.org/x/term"
 )
 
 const (
@@ -22,51 +19,28 @@ const (
 nexus_host = "{{ .Host }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
-nexus_repository = "{{ .Repository }}"`
+nexus_repository = "{{ .Repository }}"
+`
 )
 
 func SetNexusCredentials(c *cli.Context) error {
 	var hostname, repository, username, password string
-	var bytePassword []byte
-	CREDENTIALS_FILE, err := helper.GetCredentialPath()
-	if err != nil {
+	var CREDENTIALS_FILE string
+	var err error
+	var tmpl *template.Template
+	var f *os.File
+
+	// CREDENTIALS_FILE, err := helper.GetCredentialPath()
+	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
 		return err
 	}
 
-	if c.String("nexus-host") != "" {
-		hostname = c.String("nexus-host")
-	} else {
-		fmt.Print("Enter Nexus Host: ")
-		fmt.Scan(&hostname)
+	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
+	username = helper.GetInputOrFlags(c.String("username"), "Username")
+	if password, err = helper.GetPassword(c.String("password")); err != nil {
+		return err
 	}
-
-	if c.String("repository-name") != "" {
-		repository = c.String("repository-name")
-	} else {
-		fmt.Print("Enter Nexus Repository Name: ")
-		fmt.Scan(&repository)
-	}
-
-	if c.String("username") != "" {
-		username = c.String("username")
-	} else {
-		fmt.Print("Enter Nexus Repository Name: ")
-		fmt.Scan(&username)
-	}
-
-	if c.String("password") != "" {
-		bytePassword = []byte(c.String("password"))
-	} else {
-		var err error
-		fmt.Print("Enter Nexus Password: ")
-		bytePassword, err = term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
-		if err != nil {
-			return fmt.Errorf("cannot input password %v", err)
-		}
-	}
-
-	password = b64.StdEncoding.EncodeToString(bytePassword)
 
 	data := struct {
 		Host       string
@@ -80,34 +54,30 @@ func SetNexusCredentials(c *cli.Context) error {
 		repository,
 	}
 
-	tmpl, err := template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES)
-	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
+		return helper.CliErrorGen(err, 1)
 	}
 
-	f, err := os.Create(CREDENTIALS_FILE)
-	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+	if f, err = os.Create(CREDENTIALS_FILE); err != nil {
+		return helper.CliErrorGen(err, 1)
 	}
 
-	err = tmpl.Execute(f, data)
-	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+	if err = tmpl.Execute(f, data); err != nil {
+		return helper.CliErrorGen(err, 1)
 	}
 
-	err = os.Chmod(CREDENTIALS_FILE, 0666)
-	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+	if err = os.Chmod(CREDENTIALS_FILE, 0666); err != nil {
+		return helper.CliErrorGen(err, 1)
 	}
 
-	fmt.Println("nexus user configured")
+	helper.CliSuccessVerbose("nexus user configured")
 	return nil
 }
 
 func CheckToml(c *cli.Context) error {
 	r, err := registry.NewRegistry(c)
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 
 	}
 	fmt.Println(r.Host, r.Password, r.Repository, r.Username)
@@ -117,12 +87,17 @@ func CheckToml(c *cli.Context) error {
 }
 
 func GetNamespace(c *cli.Context) error {
-	r, err := registry.NewRegistry(c)
-	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+	var r registry.Registry
+	var err error
+	var CREDENTIALS_FILE string
+	var tmpl *template.Template
+	var f *os.File
+
+	if r, err = registry.NewRegistry(c); err != nil {
+		return helper.CliErrorGen(err, 1)
 	}
-	CREDENTIALS_FILE, err := helper.GetCredentialPath()
-	if err != nil {
+
+	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
 		return err
 	}
 
@@ -139,40 +114,38 @@ func GetNamespace(c *cli.Context) error {
 			c.String("repository-name"),
 		}
 
-		tmpl, err := template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES)
-		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
+			return helper.CliErrorGen(err, 1)
 		}
 
-		f, err := os.Create(CREDENTIALS_FILE)
-		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		if f, err = os.Create(CREDENTIALS_FILE); err != nil {
+			return helper.CliErrorGen(err, 1)
 		}
 
-		err = tmpl.Execute(f, data)
-		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		if err = tmpl.Execute(f, data); err != nil {
+			return helper.CliErrorGen(err, 1)
 		}
-		fmt.Printf("Camespace changed to %s\n", c.String("repository-name"))
+
+		helper.CliSuccessVerbose(fmt.Sprintf("Repository changed to %s", c.String("repository-name")))
 		return nil
 	}
-	fmt.Printf("Currently working in %s repository\n", r.Repository)
+	helper.CliInfoVerbose(fmt.Sprintf("Currently working in %s repository", r.Repository))
 	return nil
 }
 
 func ListImages(c *cli.Context) error {
 	r, err := registry.NewRegistry(c)
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	images, err := r.ListImages()
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	for _, image := range images {
 		fmt.Println(image)
 	}
-	fmt.Printf("Total images: %d\n", len(images))
+	helper.CliInfoVerbose(fmt.Sprintf("Total images: %d\n", len(images)))
 	return nil
 }
 
@@ -180,7 +153,7 @@ func ListTagsByImage(c *cli.Context) error {
 	var imgName = c.String("name")
 	r, err := registry.NewRegistry(c)
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	if imgName == "" {
 		cli.ShowSubcommandHelp(c)
@@ -193,12 +166,12 @@ func ListTagsByImage(c *cli.Context) error {
 	helper.Compare(compareStringNumber).Sort(tags)
 
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	for _, tag := range tags {
 		fmt.Println(tag)
 	}
-	fmt.Printf("There are %d images for %s\n", len(tags), imgName)
+	helper.CliInfoVerbose(fmt.Sprintf("There are %d images for %s\n", len(tags), imgName))
 	return nil
 }
 
@@ -207,14 +180,14 @@ func ShowImageInfo(c *cli.Context) error {
 	var tag = c.String("tag")
 	r, err := registry.NewRegistry(c)
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	if imgName == "" || tag == "" {
 		cli.ShowSubcommandHelp(c)
 	}
 	manifest, err := r.ImageManifest(imgName, tag)
 	if err != nil {
-		return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+		return helper.CliErrorGen(err, 1)
 	}
 	fmt.Printf("Image: %s:%s\n", imgName, tag)
 	fmt.Printf("Size: %d\n", manifest.Config.Size)
@@ -235,7 +208,7 @@ func DeleteImage(c *cli.Context) error {
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+			return helper.CliErrorGen(err, 1)
 		}
 		if tag == "" {
 			if keep == 0 {
@@ -248,7 +221,7 @@ func DeleteImage(c *cli.Context) error {
 				}
 				helper.Compare(compareStringNumber).Sort(tags)
 				if err != nil {
-					return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+					return helper.CliErrorGen(err, 1)
 				}
 				if len(tags) >= keep {
 					for _, tag := range tags[:len(tags)-keep] {
@@ -262,7 +235,7 @@ func DeleteImage(c *cli.Context) error {
 		} else {
 			err = r.DeleteImageByTag(imgName, tag)
 			if err != nil {
-				return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+				return helper.CliErrorGen(err, 1)
 			}
 		}
 	}
@@ -278,18 +251,18 @@ func ShowTotalImageSize(c *cli.Context) error {
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+			return helper.CliErrorGen(err, 1)
 		}
 
 		tags, err := r.ListTagsByImage(imgName)
 		if err != nil {
-			return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+			return helper.CliErrorGen(err, 1)
 		}
 
 		for _, tag := range tags {
 			manifest, err := r.ImageManifest(imgName, tag)
 			if err != nil {
-				return cli.NewExitError(errors.New(fmt.Sprintf("Error: %s", err)), 1)
+				return helper.CliErrorGen(err, 1)
 			}
 
 			sizeInfo := make(map[string]int64)
