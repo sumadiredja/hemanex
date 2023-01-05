@@ -1,10 +1,9 @@
 package helper
 
 import (
+	"errors"
 	"fmt"
 	"os"
-
-	"github.com/urfave/cli"
 )
 
 func GetCredentialPath() (string, error) {
@@ -13,35 +12,32 @@ func GetCredentialPath() (string, error) {
 	if IsWindows() {
 		if _, err := os.Stat(os.Getenv("AppData") + "\\hemanex"); os.IsNotExist(err) {
 			if os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", cli.NewExitError(fmt.Errorf("error: %s", err), 1)
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: %s", err)), 1)
 			}
 
 			if os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", cli.NewExitError(fmt.Errorf("error: %s", err), 1)
-
+				return "", CliErrorGen(errors.New(fmt.Sprintf("Error: %s", err)), 1)
 			}
 		}
 		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
 	} else {
 		userHomeDir, err := os.UserHomeDir()
 		if err != nil {
-			return "", cli.NewExitError(fmt.Errorf("error: %s", err), 1)
+			return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
 		}
 
 		var hemanexUserConfigDir string = userHomeDir + "/.config/hemanex"
 
 		if _, err := os.Stat(hemanexUserConfigDir); os.IsNotExist(err) {
 			if os.Mkdir(hemanexUserConfigDir, 0755) != nil {
-				return "", cli.NewExitError(fmt.Errorf("error: %s", err), 1)
+				return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
 			}
 
 			if os.Chmod(hemanexUserConfigDir, 0755) != nil {
-				return "", cli.NewExitError(fmt.Errorf("error: %s", err), 1)
+				return "", CliErrorGen(errors.New(fmt.Sprintf("error: %s", err)), 1)
 			}
 		}
 		CREDENTIALS_FILE = hemanexUserConfigDir + "/.credentials"
 	}
-
 	return CREDENTIALS_FILE, nil
-
 }
