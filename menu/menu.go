@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
+	"strings"
 
 	"hemanex/registry"
 
@@ -332,5 +334,35 @@ func ShowTotalImageSize(c *cli.Context) error {
 		}
 		fmt.Printf("%d %s\n", totalSize, imgName)
 	}
+	return nil
+}
+
+func PushImage(c *cli.Context) error {
+	var imgName = c.Args().Get(0)
+	var port = c.String("port")
+
+	if imgName == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if port == "" {
+		port = "50003"
+	}
+
+	// fmt.Printf("docker push %s:%s/%s/%s\n", strings.Split(r.Host, "//")[1], port, r.Namespace, imgName)
+	pushImage := exec.Command(fmt.Sprintf("docker push %s:%s/%s/%s", strings.Split(r.Host, "//")[1], port, r.Namespace, imgName))
+	pushImageOutput, err := pushImage.Output()
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+	fmt.Println(pushImageOutput)
+	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + r.Namespace)
+
 	return nil
 }

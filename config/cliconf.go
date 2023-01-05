@@ -199,6 +199,23 @@ func CliConfig(app *cli.App) *cli.App {
 				},
 			},
 		},
+		{
+			Name:    "push",
+			Usage:   "Push an image to Nexus Repository",
+			Aliases: []string{"pu"},
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name: "port, p",
+				},
+				cli.BoolFlag{
+					Name:  "insecure-registry, k",
+					Usage: "Turn on insecure registries",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return menu.PushImage(c)
+			},
+		},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		// fmt.Fprintf(c.App.Writer, "Wrong command %q!\n", command)
