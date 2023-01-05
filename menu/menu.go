@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"os/exec"
 	"strings"
 
 	"hemanex/registry"
@@ -13,6 +12,7 @@ import (
 
 	b64 "encoding/base64"
 
+	"github.com/estebangarcia21/subprocess"
 	"github.com/urfave/cli"
 )
 
@@ -340,6 +340,7 @@ func ShowTotalImageSize(c *cli.Context) error {
 func PushImage(c *cli.Context) error {
 	var imgName = c.Args().Get(0)
 	var port = c.String("port")
+	var isInsecure = c.Bool("insecure-registry")
 
 	if imgName == "" {
 		cli.ShowSubcommandHelp(c)
@@ -355,13 +356,19 @@ func PushImage(c *cli.Context) error {
 		port = "50003"
 	}
 
-	// fmt.Printf("docker push %s:%s/%s/%s\n", strings.Split(r.Host, "//")[1], port, r.Namespace, imgName)
-	pushImage := exec.Command(fmt.Sprintf("docker push %s:%s/%s/%s", strings.Split(r.Host, "//")[1], port, r.Namespace, imgName))
-	pushImageOutput, err := pushImage.Output()
-	if err != nil {
+	if isInsecure {
+		imgName = imgName + " --tls-verify=false"
+	}
+
+	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+r.Namespace+"/"+imgName, subprocess.Shell)
+
+	if err = pushImage.Exec(); err != nil {
+		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
 		return helper.CliErrorGen(err, 1)
 	}
-	fmt.Println(pushImageOutput)
+
+	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
+
 	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + r.Namespace)
 
 	return nil
