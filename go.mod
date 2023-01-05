@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.2.1
+	github.com/estebangarcia21/subprocess v0.0.0-20211231005935-fb739ac445af
 	github.com/urfave/cli v1.22.10
 	golang.org/x/term v0.3.0
 )

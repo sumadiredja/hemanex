@@ -12,6 +12,7 @@ import (
 
 	b64 "encoding/base64"
 
+	"github.com/estebangarcia21/subprocess"
 	"github.com/urfave/cli"
 )
 
@@ -370,8 +371,14 @@ func BuildImage(c *cli.Context) error {
 		port = "50003"
 	}
 	host := strings.Split(r.Host, "://")[1]
-	command := fmt.Sprintf("%s:%s/%s/%s:%s %s", host, port, r.Namespace, image_name, tag, cwd)
-	fmt.Printf("docker build -t %s", command)
+	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, r.Namespace, image_name, tag, cwd)
+
+	s := subprocess.New(command, subprocess.Shell)
+
+	if err := s.Exec(); err != nil {
+		return helper.CliErrorGen(err, 1)
+
+	}
 
 	return nil
 }
