@@ -25,7 +25,47 @@ nexus_repository = "{{ .Repository }}"`
 )
 
 func SetNexusCredentials(c *cli.Context) error {
+	var CREDENTIALS_FILE string
 	var hostname, repository, username, password string
+
+	if helper.IsWindows() {
+		_, err := os.Stat(os.Getenv("AppData") + "\\hemanex")
+		if err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+		if os.IsNotExist(err) {
+			err := os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666)
+			if err != nil {
+				return cli.NewExitError(err.Error(), 1)
+			}
+
+			err = os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666)
+			if err != nil {
+				return cli.NewExitError(err.Error(), 1)
+			}
+
+		}
+		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
+	} else {
+		_, err := os.Stat("/etc/hemanex")
+		if err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+
+		if os.IsNotExist(err) {
+			err := os.Mkdir("/etc/hemanex", 0666)
+			if err != nil {
+				return cli.NewExitError(err.Error(), 1)
+			}
+
+			err = os.Chmod("/etc/hemanex", 0666)
+			if err != nil {
+				return cli.NewExitError(err.Error(), 1)
+			}
+
+		}
+		CREDENTIALS_FILE = "/etc/hemanex/.credentials"
+	}
 
 	fmt.Print("Enter Nexus Host: ")
 	fmt.Scan(&hostname)
@@ -53,12 +93,12 @@ func SetNexusCredentials(c *cli.Context) error {
 		repository,
 	}
 
-	tmpl, err := template.New(".credentials").Parse(CREDENTIALS_TEMPLATES)
+	tmpl, err := template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	f, err := os.Create(".credentials")
+	f, err := os.Create(CREDENTIALS_FILE)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -67,6 +107,12 @@ func SetNexusCredentials(c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
+
+	err = os.Chmod(CREDENTIALS_FILE, 0666)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
 	return nil
 }
 
@@ -75,8 +121,9 @@ func CheckToml(c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	fmt.Println(c.Bool("insecure-registry"))
-	fmt.Println(r.Host)
+	fmt.Println(r.Host, r.Password, r.Repository, r.Username)
+	// fmt.Println(c.Bool("insecure-registry"))
+	// fmt.Println(r.Host)
 	return nil
 }
 
