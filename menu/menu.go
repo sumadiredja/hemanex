@@ -138,6 +138,7 @@ func GetNamespace(c *cli.Context) error {
 			return cli.NewExitError(err.Error(), 1)
 		}
 		fmt.Printf("Camespace changed to %s\n", c.String("repository-name"))
+		return nil
 	}
 	fmt.Printf("Currently working in %s namespace\n", r.Repository)
 	return nil
