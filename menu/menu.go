@@ -26,17 +26,39 @@ nexus_repository = "{{ .Repository }}"`
 
 func SetNexusCredentials(c *cli.Context) error {
 	var hostname, repository, username, password string
+	var bytePassword []byte
 
-	fmt.Print("Enter Nexus Host: ")
-	fmt.Scan(&hostname)
-	fmt.Print("Enter Nexus Repository Name: ")
-	fmt.Scan(&repository)
-	fmt.Print("Enter Nexus Username: ")
-	fmt.Scan(&username)
-	fmt.Print("Enter Nexus Password: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return fmt.Errorf("cannot input password %v", err)
+	if c.String("nexus-host") != "" {
+		hostname = c.String("nexus-host")
+	} else {
+		fmt.Print("Enter Nexus Host: ")
+		fmt.Scan(&hostname)
+	}
+
+	if c.String("repository-name") != "" {
+		repository = c.String("repository-name")
+	} else {
+		fmt.Print("Enter Nexus Repository Name: ")
+		fmt.Scan(&repository)
+	}
+
+	if c.String("username") != "" {
+		username = c.String("username")
+	} else {
+		fmt.Print("Enter Nexus Repository Name: ")
+		fmt.Scan(&username)
+	}
+
+	if c.String("password") != "" {
+		bytePassword = []byte(c.String("password"))
+	} else {
+		var err error
+		fmt.Print("Enter Nexus Password: ")
+		bytePassword, err = term.ReadPassword(int(syscall.Stdin))
+		fmt.Println()
+		if err != nil {
+			return fmt.Errorf("cannot input password %v", err)
+		}
 	}
 
 	password = b64.StdEncoding.EncodeToString(bytePassword)
@@ -67,6 +89,8 @@ func SetNexusCredentials(c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
+
+	fmt.Println("nexus user configured")
 	return nil
 }
 
@@ -77,6 +101,45 @@ func CheckToml(c *cli.Context) error {
 	}
 	fmt.Println(c.Bool("insecure-registry"))
 	fmt.Println(r.Host)
+	return nil
+}
+
+func GetNamespace(c *cli.Context) error {
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	if c.String("repository-name") != "" {
+		data := struct {
+			Host       string
+			Username   string
+			Password   string
+			Repository string
+		}{
+			r.Host,
+			r.Username,
+			b64.StdEncoding.EncodeToString([]byte(r.Password)),
+			c.String("repository-name"),
+		}
+
+		tmpl, err := template.New(".credentials").Parse(CREDENTIALS_TEMPLATES)
+		if err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+
+		f, err := os.Create(".credentials")
+		if err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+
+		err = tmpl.Execute(f, data)
+		if err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+		fmt.Printf("Camespace changed to %s\n", c.String("repository-name"))
+	}
+	fmt.Printf("Currently working in %s namespace\n", r.Repository)
 	return nil
 }
 
