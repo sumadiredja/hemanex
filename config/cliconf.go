@@ -14,12 +14,16 @@ func CliConfig(app *cli.App) *cli.App {
 	app.Version = "1.0.0-beta"
 	app.Authors = []cli.Author{
 		{
-			Name:  "Robby Hemawan P",
-			Email: "robby.pramudito@btpn.com",
+			Name:  "Robby Hemawan P <pramuditorh>",
+			Email: "pramuditorh@gmail.com",
 		},
 		{
-			Name:  "Hamdani Fadhli",
-			Email: "hamdani.fadhli@btpn.com",
+			Name:  "Hamdani Fadhli <ArleyB>",
+			Email: "hamdanifadhli@gmail.com",
+		},
+		{
+			Name:  "Vaghan Muhammad Sumadiredja <vaghansumadiredja>",
+			Email: "vaghansumadiredja@gmail.com",
 		},
 	}
 	app.Commands = []cli.Command{
