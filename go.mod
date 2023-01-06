@@ -7,7 +7,6 @@ require (
 	github.com/estebangarcia21/subprocess v0.0.0-20211231005935-fb739ac445af
 	github.com/manifoldco/promptui v0.9.0
 	github.com/urfave/cli v1.22.10
-	golang.org/x/term v0.3.0
 )
 
 require (

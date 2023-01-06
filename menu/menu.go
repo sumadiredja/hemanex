@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"hemanex/registry"
@@ -23,6 +24,7 @@ const (
 	CREDENTIALS_TEMPLATES = `# Nexus Credentials
 nexus_host = "{{ .Host }}"
 nexus_repository = "{{ .Repository }}"
+nexus_port = "{{ .Port }}"
 nexus_namespace = "{{ .Namespace }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
@@ -35,33 +37,100 @@ func SetNexusCredentials(c *cli.Context) error {
 	var err error
 	var tmpl *template.Template
 	var f *os.File
+	var port string = c.String("port")
+	var isInsecure bool = c.Bool("insecure-registry")
+	var skipTls string
 
 	// CREDENTIALS_FILE, err := helper.GetCredentialPath()
 	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
 		return err
 	}
 
-	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
-	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
-	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace")
-	username = helper.GetInputOrFlags(c.String("username"), "Username")
+	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host", func(input string) error {
+		if len(strings.Split(input, "//")) == 2 {
+			return nil
+		}
+		return errors.New("Please provide https:// or http://")
+	})
+	port = helper.GetInputOrFlags(c.String("port"), "Port", func(input string) error {
+		_, err := strconv.Atoi(input)
+		if err != nil {
+			return errors.New("Invalid Port")
+		}
+		return nil
+	})
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the repository-name")
+	})
+	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the namespace")
+	})
+	username = helper.GetInputOrFlags(c.String("username"), "Username", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the password")
+	})
 
-	if password, err = helper.GetPassword(c.String("password")); err != nil {
+	if password, err = helper.GetPassword(c.String("password"), func(input string) error {
+		if len(input) < 6 {
+			return errors.New("Password must have more than 6 characters")
+		}
+		return nil
+	}); err != nil {
 		return err
+	}
+
+	if !c.Bool("ignore-confirmation") {
+		prompt := promptui.Prompt{
+			Label:     "Are you sure to login with this credentials",
+			IsConfirm: true,
+		}
+
+		_, err = prompt.Run()
+
+		if err != nil {
+			fmt.Print(helper.CliErrorGen(fmt.Errorf("User not logged in : %v\n", "user decide to cancel the login"), 1))
+			os.Exit(1)
+		}
 	}
 
 	data := struct {
 		Host       string
+		Port       string
 		Username   string
 		Password   string
 		Repository string
 		Namespace  string
 	}{
 		hostname,
+		port,
 		username,
 		password,
 		repository,
 		namespace,
+	}
+
+	decodePassword, _ := b64.StdEncoding.DecodeString(password)
+
+	if isInsecure {
+		skipTls = " --tls-verify=false"
+	}
+
+	cmdLogin := fmt.Sprintf("docker login " + strings.Split(hostname, "//")[1] + ":" + port + " -u " + username + " -p " + string(decodePassword) + skipTls)
+	login := subprocess.New(cmdLogin, subprocess.Shell)
+	if err = login.Exec(); err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if login.ExitCode() != 0 {
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
 	}
 
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
@@ -73,10 +142,6 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	if err = tmpl.Execute(f, data); err != nil {
-		return helper.CliErrorGen(err, 1)
-	}
-
-	if err = os.Chmod(CREDENTIALS_FILE, 0666); err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
 
@@ -395,6 +460,7 @@ func PushImage(c *cli.Context) error {
 	var imgName = c.Args().Get(0)
 	var port = c.String("port")
 	var isInsecure = c.Bool("insecure-registry")
+	var skipTls string
 	var namespace string
 
 	if imgName == "" {
@@ -417,10 +483,17 @@ func PushImage(c *cli.Context) error {
 	}
 
 	if isInsecure {
-		imgName = imgName + " --tls-verify=false"
+		skipTls = " --tls-verify=false"
 	}
 
-	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+namespace+"/"+imgName, subprocess.Shell)
+	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + port + " -u " + r.Username + " -p " + r.Password + skipTls)
+	login := subprocess.New(cmdLogin, subprocess.Shell)
+	if err = login.Exec(); err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + namespace + "/" + imgName + skipTls)
+	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
 	if err = pushImage.Exec(); err != nil {
 		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())

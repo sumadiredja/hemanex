@@ -2,37 +2,55 @@ package helper
 
 import (
 	"fmt"
-	"syscall"
+	"os"
 
 	b64 "encoding/base64"
 
-	"golang.org/x/term"
+	"github.com/manifoldco/promptui"
 )
 
-func GetInputOrFlags(flags string, input string) string {
+func GetInputOrFlags(flags string, input string, validation func(input string) error) string {
 	var user_input string
 	if flags != "" {
 		user_input = flags
 	} else {
-		fmt.Printf("Enter Nexus %s: ", input)
-		fmt.Scan(&user_input)
+		prompt := promptui.Prompt{
+			Label:    "Enter Nexus " + input,
+			Validate: validation,
+		}
+		result, err := prompt.Run()
+
+		if err != nil {
+			fmt.Print(CliErrorGen(fmt.Errorf("Error : %v\n", "error getting input from user"), 1))
+			os.Exit(1)
+		}
+
+		user_input = result
 	}
 	return user_input
+
 }
 
-func GetPassword(flags string) (string, error) {
+func GetPassword(flags string, validation func(input string) error) (string, error) {
 	var bytePassword []byte
 
 	if flags != "" {
 		bytePassword = []byte(flags)
 	} else {
 		var err error
-		fmt.Print("Enter Nexus Password: ")
-		bytePassword, err = term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
-		if err != nil {
-			return "", CliErrorGen(err, 1)
+		prompt := promptui.Prompt{
+			Label:    "Password",
+			Validate: validation,
+			Mask:     '*',
 		}
+
+		result, err := prompt.Run()
+
+		if err != nil {
+			fmt.Print(CliErrorGen(fmt.Errorf("Error : %v\n", "error getting input from user"), 1))
+			os.Exit(1)
+		}
+		bytePassword = []byte(result)
 	}
 
 	return b64.StdEncoding.EncodeToString(bytePassword), nil
