@@ -53,6 +53,14 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "namespace, n",
 					Usage: "Nexus namespace",
 				},
+				cli.StringFlag{
+					Name:  "port",
+					Usage: "Nexus port",
+				},
+				cli.BoolFlag{
+					Name:  "insecure-registry, k",
+					Usage: "Turn on insecure registries",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return menu.SetNexusCredentials(c)
