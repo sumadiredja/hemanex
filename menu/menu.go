@@ -129,7 +129,7 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	if login.ExitCode() != 0 {
-		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus"), 1)
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
 	}
 
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {

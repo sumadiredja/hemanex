@@ -63,7 +63,7 @@ func CliConfig(app *cli.App) *cli.App {
 				},
 				cli.BoolFlag{
 					Name:  "insecure-registry, k",
-					Usage: "Turn on insecure registries",
+					Usage: "Turn on insecure registries \033[0;31mjust for podman\033[0m",
 				},
 			},
 			Action: func(c *cli.Context) error {
