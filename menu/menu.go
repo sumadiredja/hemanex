@@ -130,7 +130,6 @@ func SetNexusCredentials(c *cli.Context) error {
 
 	if login.ExitCode() != 0 {
 		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus"), 1)
-		os.Exit(1)
 	}
 
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
