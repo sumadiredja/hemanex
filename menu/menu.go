@@ -32,6 +32,9 @@ func SetNexusCredentials(c *cli.Context) error {
 	var err error
 	var tmpl *template.Template
 	var f *os.File
+	var port string = c.String("port")
+	var isInsecure bool = c.Bool("insecure-registry")
+	var skipTls string
 
 	// CREDENTIALS_FILE, err := helper.GetCredentialPath()
 	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
@@ -61,6 +64,23 @@ func SetNexusCredentials(c *cli.Context) error {
 		namespace,
 	}
 
+	decodePassword, _ := b64.StdEncoding.DecodeString(password)
+
+	if isInsecure {
+		skipTls = " --tls-verify=false"
+	}
+
+	cmdLogin := fmt.Sprintf("docker login " + strings.Split(hostname, "//")[1] + ":" + port + " -u " + username + " -p " + string(decodePassword) + skipTls)
+	login := subprocess.New(cmdLogin, subprocess.Shell)
+	if err = login.Exec(); err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	if login.ExitCode() != 0 {
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus"), 1)
+		os.Exit(1)
+	}
+
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
@@ -70,10 +90,6 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	if err = tmpl.Execute(f, data); err != nil {
-		return helper.CliErrorGen(err, 1)
-	}
-
-	if err = os.Chmod(CREDENTIALS_FILE, 0666); err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
 
@@ -387,6 +403,7 @@ func PushImage(c *cli.Context) error {
 	var imgName = c.Args().Get(0)
 	var port = c.String("port")
 	var isInsecure = c.Bool("insecure-registry")
+	var skipTls string
 
 	if imgName == "" {
 		cli.ShowSubcommandHelp(c)
@@ -403,10 +420,17 @@ func PushImage(c *cli.Context) error {
 	}
 
 	if isInsecure {
-		imgName = imgName + " --tls-verify=false"
+		skipTls = " --tls-verify=false"
 	}
 
-	pushImage := subprocess.New("docker push "+strings.Split(r.Host, "//")[1]+":"+port+"/"+r.Namespace+"/"+imgName, subprocess.Shell)
+	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + port + " -u " + r.Username + " -p " + r.Password + skipTls)
+	login := subprocess.New(cmdLogin, subprocess.Shell)
+	if err = login.Exec(); err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + r.Namespace + "/" + imgName + skipTls)
+	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
 	if err = pushImage.Exec(); err != nil {
 		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
