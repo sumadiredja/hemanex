@@ -366,7 +366,11 @@ func BuildImage(c *cli.Context) error {
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
+	var namespace = r.Namespace
 
+	if c.String("namespace") != "" {
+		namespace = c.String("namespace")
+	}
 	if tags == "" {
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -391,8 +395,7 @@ func BuildImage(c *cli.Context) error {
 		port = "50003"
 	}
 	host := strings.Split(r.Host, "://")[1]
-	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, r.Namespace, image_name, tag, cwd)
-
+	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, namespace, image_name, tag, cwd)
 	s := subprocess.New(command, subprocess.Shell)
 
 	if err := s.Exec(); err != nil {
@@ -408,6 +411,7 @@ func PushImage(c *cli.Context) error {
 	var port = c.String("port")
 	var isInsecure = c.Bool("insecure-registry")
 	var skipTls string
+	var namespace string
 
 	if imgName == "" {
 		cli.ShowSubcommandHelp(c)
@@ -417,6 +421,11 @@ func PushImage(c *cli.Context) error {
 	r, err := registry.NewRegistry(c)
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
+	}
+
+	namespace = r.Namespace
+	if c.String("namespace") != "" {
+		namespace = c.String("namespace")
 	}
 
 	if port == "" {
@@ -433,7 +442,7 @@ func PushImage(c *cli.Context) error {
 		return helper.CliErrorGen(err, 1)
 	}
 
-	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + r.Namespace + "/" + imgName + skipTls)
+	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + namespace + "/" + imgName + skipTls)
 	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
 	if err = pushImage.Exec(); err != nil {
