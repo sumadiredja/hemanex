@@ -383,6 +383,8 @@ func BuildImage(c *cli.Context) error {
 
 	}
 
+	helper.CliSuccessVerbose("Successfully built image " + image_name + " : " + tag + " with namespace " + namespace)
+
 	return nil
 }
 
@@ -424,7 +426,41 @@ func PushImage(c *cli.Context) error {
 
 	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
 
-	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + r.Namespace)
+	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + namespace)
+
+	return nil
+}
+
+func DeleteImageLocal(c *cli.Context) error {
+	var tag string
+	var err error
+	var force = ""
+	image_name := c.Args().Get(0)
+
+	if image_name == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	name_split := strings.Split(image_name, ":")
+	if len(name_split) <= 1 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	tag = name_split[1]
+	if tag == "" {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+	if c.Bool("force") {
+		force = "-f "
+	}
+
+	del_image := subprocess.New(fmt.Sprintf("docker rmi %s%s", force, image_name), subprocess.Shell)
+
+	if err = del_image.Exec(); err != nil {
+		fmt.Println(del_image.StderrText(), del_image.StdoutText(), del_image.ExitCode())
+		return helper.CliErrorGen(err, 1)
+	}
 
 	return nil
 }

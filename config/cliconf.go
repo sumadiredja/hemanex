@@ -222,6 +222,27 @@ func CliConfig(app *cli.App) *cli.App {
 			},
 		},
 		{
+			Name:    "image-local",
+			Aliases: []string{"img-local"},
+			Usage:   "Manage Docker Images",
+			Subcommands: []cli.Command{
+				{
+					Name:    "delete",
+					Aliases: []string{"del"},
+					Usage:   "Delete an image usage: hemanex image-local delete <image_name>:<tag>",
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "force, f",
+							Usage: "Force delete",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						return menu.DeleteImageLocal(c)
+					},
+				},
+			},
+		},
+		{
 			Name:    "push",
 			Usage:   "Push an image to Nexus Repository",
 			Aliases: []string{"pu"},
