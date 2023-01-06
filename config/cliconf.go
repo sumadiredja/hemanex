@@ -235,6 +235,14 @@ func CliConfig(app *cli.App) *cli.App {
 							Name:  "force, f",
 							Usage: "Force delete",
 						},
+						cli.StringFlag{
+							Name:  "port, p",
+							Usage: "Nexus registry port",
+						},
+						cli.BoolFlag{
+							Name:  "all, a",
+							Usage: "Delete all matched images",
+						},
 					},
 					Action: func(c *cli.Context) error {
 						return menu.DeleteImageLocal(c)

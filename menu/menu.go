@@ -1,9 +1,11 @@
 package menu
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
 	"strings"
 
 	"hemanex/registry"
@@ -13,6 +15,7 @@ import (
 	b64 "encoding/base64"
 
 	"github.com/estebangarcia21/subprocess"
+	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli"
 )
 
@@ -432,16 +435,24 @@ func PushImage(c *cli.Context) error {
 }
 
 func DeleteImageLocal(c *cli.Context) error {
-	var tag string
+	var tag, img_name string
 	var err error
 	var force = ""
+	var prefix string
+	var port = "50003"
+
 	image_name := c.Args().Get(0)
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
 
 	if image_name == "" {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
 	name_split := strings.Split(image_name, ":")
+	img_name = name_split[0]
 	if len(name_split) <= 1 {
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -454,13 +465,79 @@ func DeleteImageLocal(c *cli.Context) error {
 	if c.Bool("force") {
 		force = "-f "
 	}
-
-	del_image := subprocess.New(fmt.Sprintf("docker rmi %s%s", force, image_name), subprocess.Shell)
-
-	if err = del_image.Exec(); err != nil {
-		fmt.Println(del_image.StderrText(), del_image.StdoutText(), del_image.ExitCode())
-		return helper.CliErrorGen(err, 1)
+	if c.String("port") != "" {
+		port = c.String("port")
 	}
+
+	prefix = fmt.Sprintf("%s:%s", strings.Split(r.Host, "://")[1], port)
+
+	// cmd := exec.Command("docker", "images")
+	cmd := fmt.Sprintf(`docker images --format="{{.Repository}} {{.Tag}}" | grep "%s" | grep "%s/%s" | grep "%s"`, prefix, r.Namespace, img_name, tag)
+	out, err := exec.Command("bash", "-c", cmd).Output()
+
+	if err != nil {
+		return helper.CliErrorGen(errors.New("No image found with name "+image_name), 1)
+	}
+
+	list := strings.Split(strings.ReplaceAll(string(out), "\rn", "\n"), "\n")
+
+	if list[len(list)-1] == "" {
+		list = list[0 : len(list)-1]
+	}
+
+	if len(list) == 1 {
+		image := strings.ReplaceAll(list[0], " ", ":")
+		cmd = fmt.Sprintf("docker rmi %s%s", force, image)
+		_, err = exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			return helper.CliErrorGen(errors.New("Error: Error getting input from user"), 1)
+		}
+		helper.CliSuccessVerbose("Successfully deleted image " + image)
+		return nil
+	}
+
+	var list_images []string
+	for i := 0; i < len(list)-1; i++ {
+		hehe := strings.Split(list[i], " ")
+		image := strings.Join(hehe, ":")
+		list_images = append(list_images, image)
+		if c.Bool("all") {
+			cmd = fmt.Sprintf("docker rmi %s%s", force, image)
+			_, err = exec.Command("bash", "-c", cmd).Output()
+			if err != nil {
+				return helper.CliErrorGen(errors.New("Error: Error getting input from user"), 1)
+			}
+			helper.CliSuccessVerbose("Successfully deleted image " + image)
+		}
+
+	}
+
+	if c.Bool("all") {
+		return nil
+	}
+
+	template := &promptui.SelectTemplates{
+		Active:   "🚀 {{ . | cyan }}",
+		Selected: "Image Selected: {{ . | yellow }}",
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Image",
+		Items:     list_images,
+		Templates: template,
+		Searcher: func(input string, index int) bool {
+			return strings.Contains(list_images[index], input)
+		},
+	}
+
+	_, selected_image, err := prompt.Run()
+
+	cmd = fmt.Sprintf("docker rmi %s%s", force, selected_image)
+	_, err = exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("Error: Error getting input from user"), 1)
+	}
+	helper.CliSuccessVerbose("Successfully deleted image " + selected_image)
 
 	return nil
 }
