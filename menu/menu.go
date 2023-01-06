@@ -1,9 +1,11 @@
 package menu
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
+	"strconv"
 	"strings"
 
 	"hemanex/registry"
@@ -13,6 +15,7 @@ import (
 	b64 "encoding/base64"
 
 	"github.com/estebangarcia21/subprocess"
+	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli"
 )
 
@@ -42,14 +45,59 @@ func SetNexusCredentials(c *cli.Context) error {
 		return err
 	}
 
-	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
-	port = helper.GetInputOrFlags(c.String("port"), "Port")
-	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
-	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace")
-	username = helper.GetInputOrFlags(c.String("username"), "Username")
+	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host", func(input string) error {
+		if len(strings.Split(input, "//")) == 2 {
+			return nil
+		}
+		return errors.New("Please provide https:// or http://")
+	})
+	port = helper.GetInputOrFlags(c.String("port"), "Port", func(input string) error {
+		_, err := strconv.Atoi(input)
+		if err != nil {
+			return errors.New("Invalid Port")
+		}
+		return nil
+	})
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the repository-name")
+	})
+	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the namespace")
+	})
+	username = helper.GetInputOrFlags(c.String("username"), "Username", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the password")
+	})
 
-	if password, err = helper.GetPassword(c.String("password")); err != nil {
+	if password, err = helper.GetPassword(c.String("password"), func(input string) error {
+		if len(input) < 6 {
+			return errors.New("Password must have more than 6 characters")
+		}
+		return nil
+	}); err != nil {
 		return err
+	}
+
+	if !c.Bool("ignore-confirmation") {
+		prompt := promptui.Prompt{
+			Label:     "Are you sure to login with this credentials",
+			IsConfirm: true,
+		}
+
+		_, err = prompt.Run()
+
+		if err != nil {
+			fmt.Print(helper.CliErrorGen(fmt.Errorf("User not logged in : %v\n", "user decide to cancel the login"), 1))
+			os.Exit(1)
+		}
 	}
 
 	data := struct {
@@ -81,8 +129,7 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	if login.ExitCode() != 0 {
-		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus"), 1)
-		os.Exit(1)
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
 	}
 
 	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {

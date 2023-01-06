@@ -53,13 +53,17 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "namespace, n",
 					Usage: "Nexus namespace",
 				},
+				cli.BoolFlag{
+					Name:  "ignore-confirmation, i",
+					Usage: "Ignore confirmation prompt",
+				},
 				cli.StringFlag{
 					Name:  "port",
 					Usage: "Nexus port",
 				},
 				cli.BoolFlag{
 					Name:  "insecure-registry, k",
-					Usage: "Turn on insecure registries",
+					Usage: "Turn on insecure registries \033[0;31mjust for podman\033[0m",
 				},
 			},
 			Action: func(c *cli.Context) error {
