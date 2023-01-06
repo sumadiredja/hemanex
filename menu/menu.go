@@ -20,6 +20,7 @@ const (
 	CREDENTIALS_TEMPLATES = `# Nexus Credentials
 nexus_host = "{{ .Host }}"
 nexus_repository = "{{ .Repository }}"
+nexus_port = "{{ .Port }}"
 nexus_namespace = "{{ .Namespace }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
@@ -42,6 +43,7 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host")
+	port = helper.GetInputOrFlags(c.String("port"), "Port")
 	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name")
 	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace")
 	username = helper.GetInputOrFlags(c.String("username"), "Username")
@@ -52,12 +54,14 @@ func SetNexusCredentials(c *cli.Context) error {
 
 	data := struct {
 		Host       string
+		Port       string
 		Username   string
 		Password   string
 		Repository string
 		Namespace  string
 	}{
 		hostname,
+		port,
 		username,
 		password,
 		repository,
