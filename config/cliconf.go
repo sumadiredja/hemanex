@@ -53,6 +53,10 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "namespace, n",
 					Usage: "Nexus namespace",
 				},
+				cli.BoolFlag{
+					Name:  "ignore-confirmation, i",
+					Usage: "Ignore confirmation prompt",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return menu.SetNexusCredentials(c)
