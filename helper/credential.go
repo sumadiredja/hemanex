@@ -33,7 +33,7 @@ func CredentialsWritter(data CredentialsDataType, CREDENTIALS_FILE string, CREDE
 		return CliErrorGen(err, 1)
 	}
 
-	CliSuccessVerbose(fmt.Sprintf(success_message))
+	CliSuccessVerbose(success_message)
 
 	return nil
 }
