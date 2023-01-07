@@ -1,4 +1,4 @@
-module hemanex
+module github.com/sumadiredja/hemanex
 
 go 1.18
 
