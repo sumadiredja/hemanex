@@ -446,8 +446,8 @@ func BuildImage(c *cli.Context) error {
 	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, namespace, image_name, tag, cwd)
 	s := subprocess.New(command, subprocess.Shell)
 
-	if err := s.Exec(); err != nil {
-		return helper.CliErrorGen(err, 1)
+	if _ = s.Exec(); s.ExitCode() != 0 {
+		return helper.CliErrorGen(errors.New("Failed to build image"), 1)
 
 	}
 
@@ -488,16 +488,16 @@ func PushImage(c *cli.Context) error {
 
 	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + port + " -u " + r.Username + " -p " + r.Password + skipTls)
 	login := subprocess.New(cmdLogin, subprocess.Shell)
-	if err = login.Exec(); err != nil {
-		return helper.CliErrorGen(err, 1)
+	if err = login.Exec(); login.ExitCode() != 0 {
+		return helper.CliErrorGen(errors.New("Failed to login to docker"), 1)
 	}
 
 	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + namespace + "/" + imgName + skipTls)
 	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
-	if err = pushImage.Exec(); err != nil {
+	if err = pushImage.Exec(); pushImage.ExitCode() != 0 {
 		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
-		return helper.CliErrorGen(err, 1)
+		return helper.CliErrorGen(errors.New("Failed to push the image"), 1)
 	}
 
 	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
