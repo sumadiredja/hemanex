@@ -58,7 +58,7 @@ func NewRegistry(cli_context *cli.Context) (Registry, error) {
 	}
 
 	if _, err := os.Stat(CREDENTIALS_FILE); os.IsNotExist(err) {
-		return r, helper.CliErrorGen(fmt.Errorf("User not logged in"), 1)
+		return r, helper.CliErrorGen(fmt.Errorf("user not logged in"), 1)
 	} else if err != nil {
 		return r, err
 	}
@@ -79,6 +79,8 @@ func NewRegistry(cli_context *cli.Context) (Registry, error) {
 }
 
 func (r Registry) ListImages() ([]string, error) {
+	var repositories Repositories
+
 	client := &http.Client{}
 	var host_port = ""
 
@@ -105,13 +107,17 @@ func (r Registry) ListImages() ([]string, error) {
 		return nil, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
-	var repositories Repositories
-	json.NewDecoder(resp.Body).Decode(&repositories)
+	err = json.NewDecoder(resp.Body).Decode(&repositories)
+	if err != nil {
+		return nil, err
+	}
 
 	return repositories.Images, nil
 }
 
 func (r Registry) ListTagsByImage(image string) ([]string, error) {
+	var imageTags ImageTags
+
 	client := &http.Client{}
 	var host_port = ""
 
@@ -136,8 +142,10 @@ func (r Registry) ListTagsByImage(image string) ([]string, error) {
 		return nil, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
-	var imageTags ImageTags
-	json.NewDecoder(resp.Body).Decode(&imageTags)
+	err = json.NewDecoder(resp.Body).Decode(&imageTags)
+	if err != nil {
+		return nil, err
+	}
 
 	return imageTags.Tags, nil
 }
@@ -169,7 +177,10 @@ func (r Registry) ImageManifest(image string, tag string) (ImageManifest, error)
 		return imageManifest, helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
-	json.NewDecoder(resp.Body).Decode(&imageManifest)
+	err = json.NewDecoder(resp.Body).Decode(&imageManifest)
+	if err != nil {
+		return imageManifest, err
+	}
 
 	return imageManifest, nil
 
