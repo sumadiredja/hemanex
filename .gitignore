@@ -2,3 +2,4 @@ hemanex
 .credentials
 hemanex.exe
 dist/
+github_token
