@@ -9,6 +9,13 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+func CheckFlagsStringExist(flags string, repository_data string) string {
+	if flags != "" {
+		return flags
+	}
+	return repository_data
+}
+
 func GetInputOrFlags(flags string, input string, validation func(input string) error) string {
 	var user_input string
 	if flags != "" {

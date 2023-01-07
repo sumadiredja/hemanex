@@ -8,8 +8,6 @@ import (
 	"unicode"
 )
 
-// Almost completely ripped off https://www.socketloop.com/tutorials/golang-natural-string-sorting-example
-
 type Compare func(str1, str2 string) bool
 
 func (cmp Compare) Sort(strs []string) {

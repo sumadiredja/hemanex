@@ -3,19 +3,17 @@ package menu
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"hemanex/registry"
 
 	helper "hemanex/helper"
+	validator "hemanex/validator"
 
 	b64 "encoding/base64"
 
-	"github.com/estebangarcia21/subprocess"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli"
 )
@@ -25,7 +23,7 @@ const (
 nexus_host = "{{ .Host }}"
 nexus_host_port = "{{ .NexusPort }}"
 nexus_repository = "{{ .Repository }}"
-nexus_repository_port = "{{ .Port }}"
+nexus_repository_port = "{{ .RepositoryPort }}"
 nexus_namespace = "{{ .Namespace }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
@@ -36,63 +34,22 @@ func SetNexusCredentials(c *cli.Context) error {
 	var hostname, repository, username, password, namespace, nexus_host_port, port string
 	var CREDENTIALS_FILE string
 	var err error
-	var tmpl *template.Template
-	var f *os.File
 	var skipTls string
 
 	isInsecure := c.Bool("insecure-registry")
 
-	// CREDENTIALS_FILE, err := helper.GetCredentialPath()
 	if CREDENTIALS_FILE, err = helper.GetCredentialPath(); err != nil {
 		return err
 	}
 
-	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host", func(input string) error {
-		if len(strings.Split(input, "//")) == 2 {
-			return nil
-		}
-		return errors.New("please provide https:// or http://")
-	})
-	nexus_host_port = helper.GetInputOrFlags(c.String("host-port"), "Host Port", func(input string) error {
-		_, err := strconv.Atoi(input)
-		if err != nil {
-			return errors.New("invalid port")
-		}
-		return nil
-	})
+	hostname = helper.GetInputOrFlags(c.String("nexus-host"), "Host", validator.HostnameValidator)
+	nexus_host_port = helper.GetInputOrFlags(c.String("nexus-host-port"), "Host Port", validator.IsNumber("Invalid Port"))
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", validator.IsNotEmpty("repository name"))
+	port = helper.GetInputOrFlags(c.String("repository-port"), "Repository Port", validator.IsNumber("Invalid Port"))
+	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace", validator.IsNotEmpty("namespace"))
+	username = helper.GetInputOrFlags(c.String("username"), "Username", validator.IsNotEmpty("username"))
 
-	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", func(input string) error {
-		if len(input) != 0 {
-			return nil
-		}
-		return errors.New("please provide the repository-name")
-	})
-	port = helper.GetInputOrFlags(c.String("repository-port"), "Repository Port", func(input string) error {
-		_, err := strconv.Atoi(input)
-		if err != nil {
-			return errors.New("invalid port")
-		}
-		return nil
-	})
-	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace", func(input string) error {
-		if len(input) != 0 {
-			return nil
-		}
-		return errors.New("please provide the namespace")
-	})
-	username = helper.GetInputOrFlags(c.String("username"), "Username", func(input string) error {
-		if len(input) != 0 {
-			return nil
-		}
-		return errors.New("please provide the password")
-	})
-
-	if password, err = helper.GetPassword(c.String("password"), func(input string) error {
-		if len(input) < 6 {
-			return errors.New("password must have more than 6 characters")
-		}
-		return nil
-	}); err != nil {
+	if password, err = helper.GetPassword(c.String("password"), validator.PasswordValidator); err != nil {
 		return err
 	}
 
@@ -110,22 +67,14 @@ func SetNexusCredentials(c *cli.Context) error {
 		}
 	}
 
-	data := struct {
-		Host       string
-		NexusPort  string
-		Port       string
-		Username   string
-		Password   string
-		Repository string
-		Namespace  string
-	}{
-		hostname,
-		nexus_host_port,
-		port,
-		username,
-		password,
-		repository,
-		namespace,
+	data := helper.CredentialsDataType{
+		Host:           hostname,
+		NexusPort:      nexus_host_port,
+		Repository:     repository,
+		RepositoryPort: port,
+		Namespace:      namespace,
+		Username:       username,
+		Password:       password,
 	}
 
 	decodePassword, _ := b64.StdEncoding.DecodeString(password)
@@ -135,28 +84,16 @@ func SetNexusCredentials(c *cli.Context) error {
 	}
 
 	cmdLogin := fmt.Sprintf("docker login " + strings.Split(hostname, "//")[1] + ":" + port + " -u " + username + " -p " + string(decodePassword) + skipTls)
-	login := subprocess.New(cmdLogin, subprocess.Shell)
-	if err = login.Exec(); err != nil {
-		return helper.CliErrorGen(err, 1)
+	_, err = helper.RunSubProcess(cmdLogin, helper.ErrorCertificateResponse)
+
+	if err != nil {
+		return err
 	}
 
-	if login.ExitCode() != 0 {
-		return helper.CliErrorGen(fmt.Errorf("error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
+	err = helper.CredentialsWritter(data, CREDENTIALS_FILE, CREDENTIALS_TEMPLATES, "nexus user configured")
+	if err != nil {
+		return err
 	}
-
-	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
-		return helper.CliErrorGen(err, 1)
-	}
-
-	if f, err = os.Create(CREDENTIALS_FILE); err != nil {
-		return helper.CliErrorGen(err, 1)
-	}
-
-	if err = tmpl.Execute(f, data); err != nil {
-		return helper.CliErrorGen(err, 1)
-	}
-
-	helper.CliSuccessVerbose("nexus user configured")
 	return nil
 }
 
@@ -167,8 +104,7 @@ func CheckToml(c *cli.Context) error {
 
 	}
 	fmt.Println(r.Host, r.Password, r.Repository, r.Username, r.Namespace)
-	// fmt.Println(c.Bool("insecure-registry"))
-	// fmt.Println(r.Host)
+
 	return nil
 }
 
@@ -176,8 +112,6 @@ func GetRepository(c *cli.Context) error {
 	var r registry.Registry
 	var err error
 	var CREDENTIALS_FILE string
-	var tmpl *template.Template
-	var f *os.File
 
 	if r, err = registry.NewRegistry(c); err != nil {
 		return helper.CliErrorGen(err, 1)
@@ -188,33 +122,20 @@ func GetRepository(c *cli.Context) error {
 	}
 
 	if c.String("repository-name") != "" {
-		data := struct {
-			Host       string
-			Username   string
-			Password   string
-			Repository string
-			Namespace  string
-		}{
-			r.Host,
-			r.Username,
-			b64.StdEncoding.EncodeToString([]byte(r.Password)),
-			c.String("repository-name"),
-			r.Namespace,
+		data := helper.CredentialsDataType{
+			Host:           r.Host,
+			NexusPort:      r.NexusPort,
+			Repository:     c.String("repository-name"),
+			RepositoryPort: r.RepositoryPort,
+			Namespace:      r.Namespace,
+			Username:       r.Username,
+			Password:       b64.StdEncoding.EncodeToString([]byte(r.Password)),
 		}
 
-		if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
-			return helper.CliErrorGen(err, 1)
+		err := helper.CredentialsWritter(data, CREDENTIALS_FILE, CREDENTIALS_TEMPLATES, fmt.Sprintf("Repository changed to %s", c.String("repository-name")))
+		if err != nil {
+			return err
 		}
-
-		if f, err = os.Create(CREDENTIALS_FILE); err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-
-		if err = tmpl.Execute(f, data); err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-
-		helper.CliSuccessVerbose(fmt.Sprintf("Repository changed to %s", c.String("repository-name")))
 		return nil
 	}
 	helper.CliInfoVerbose(fmt.Sprintf("Currently working in %s repository", r.Repository))
@@ -225,8 +146,6 @@ func GetNamespace(c *cli.Context) error {
 	var r registry.Registry
 	var err error
 	var CREDENTIALS_FILE string
-	var tmpl *template.Template
-	var f *os.File
 
 	if r, err = registry.NewRegistry(c); err != nil {
 		return helper.CliErrorGen(err, 1)
@@ -237,32 +156,20 @@ func GetNamespace(c *cli.Context) error {
 	}
 
 	if c.String("namespace-name") != "" {
-		data := struct {
-			Host       string
-			Username   string
-			Password   string
-			Repository string
-			Namespace  string
-		}{
-			r.Host,
-			r.Username,
-			b64.StdEncoding.EncodeToString([]byte(r.Password)),
-			r.Repository,
-			c.String("namespace-name"),
-		}
-		if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
-			return helper.CliErrorGen(err, 1)
+		data := helper.CredentialsDataType{
+			Host:           r.Host,
+			NexusPort:      r.NexusPort,
+			Repository:     r.Repository,
+			RepositoryPort: r.RepositoryPort,
+			Namespace:      c.String("namespace-name"),
+			Username:       r.Username,
+			Password:       b64.StdEncoding.EncodeToString([]byte(r.Password)),
 		}
 
-		if f, err = os.Create(CREDENTIALS_FILE); err != nil {
-			return helper.CliErrorGen(err, 1)
+		err := helper.CredentialsWritter(data, CREDENTIALS_FILE, CREDENTIALS_TEMPLATES, fmt.Sprintf("Namespace changed to %s", c.String("namespace-name")))
+		if err != nil {
+			return err
 		}
-
-		if err = tmpl.Execute(f, data); err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-
-		helper.CliSuccessVerbose(fmt.Sprintf("Namespace changed to %s", c.String("namespace-name")))
 		return nil
 	}
 	helper.CliInfoVerbose(fmt.Sprintf("Current namespace is %s", r.Namespace))
@@ -452,11 +359,9 @@ func BuildImage(c *cli.Context) error {
 	}
 	host := strings.Split(r.Host, "://")[1]
 	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, namespace, image_name, tag, cwd)
-	s := subprocess.New(command, subprocess.Shell)
-
-	if _ = s.Exec(); s.ExitCode() != 0 {
-		return helper.CliErrorGen(errors.New("failed to build image"), 1)
-
+	_, err = helper.RunSubProcess(command, "failed to build image")
+	if err != nil {
+		return err
 	}
 
 	helper.CliSuccessVerbose("Successfully built image " + image_name + ":" + tag + " with namespace " + namespace)
@@ -465,45 +370,37 @@ func BuildImage(c *cli.Context) error {
 }
 
 func PushImage(c *cli.Context) error {
-	var imgName = c.Args().Get(0)
-	var port = c.String("repository-port")
-	var isInsecure = c.Bool("insecure-registry")
 	var skipTls string
-	var namespace string
-
-	if imgName == "" {
-		return helper.ShowSubCommand("please provide image name", c)
-	}
+	var imgName = c.Args().Get(0)
 
 	r, err := registry.NewRegistry(c)
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
 
-	namespace = r.Namespace
-	if c.String("namespace") != "" {
-		namespace = c.String("namespace")
+	if imgName == "" {
+		return helper.ShowSubCommand("please provide image name", c)
 	}
 
-	if port == "" {
-		port = r.RepositoryPort
-	}
+	repository_port := helper.CheckFlagsStringExist(c.String("repository-port"), r.RepositoryPort)
+	namespace := helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace)
+
+	var isInsecure = c.Bool("insecure-registry")
 
 	if isInsecure {
 		skipTls = " --tls-verify=false"
 	}
 
-	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + port + " -u " + r.Username + " -p " + r.Password + skipTls)
-	login := subprocess.New(cmdLogin, subprocess.Shell)
-	if err = login.Exec(); login.ExitCode() != 0 || err != nil {
-		return helper.CliErrorGen(fmt.Errorf("error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
+	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + repository_port + " -u " + r.Username + " -p " + r.Password + skipTls)
+	_, err = helper.RunSubProcess(cmdLogin, helper.ErrorCertificateResponse)
+	if err != nil {
+		return err
 	}
 
-	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + namespace + "/" + imgName + skipTls)
-	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
-
-	if err = pushImage.Exec(); pushImage.ExitCode() != 0 || err != nil {
-		return helper.CliErrorGen(fmt.Errorf("error: Cannot push to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
+	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + repository_port + "/" + namespace + "/" + imgName + skipTls)
+	_, err = helper.RunSubProcess(cmdPushImage, "image not found locally")
+	if err != nil {
+		return err
 	}
 
 	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + namespace)

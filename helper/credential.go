@@ -2,8 +2,41 @@ package helper
 
 import (
 	"fmt"
+	"html/template"
 	"os"
 )
+
+type CredentialsDataType struct {
+	Host           string
+	NexusPort      string
+	Repository     string
+	RepositoryPort string
+	Namespace      string
+	Username       string
+	Password       string
+}
+
+func CredentialsWritter(data CredentialsDataType, CREDENTIALS_FILE string, CREDENTIALS_TEMPLATES string, success_message string) error {
+	var tmpl *template.Template
+	var f *os.File
+	var err error
+
+	if tmpl, err = template.New(CREDENTIALS_FILE).Parse(CREDENTIALS_TEMPLATES); err != nil {
+		return CliErrorGen(err, 1)
+	}
+
+	if f, err = os.Create(CREDENTIALS_FILE); err != nil {
+		return CliErrorGen(err, 1)
+	}
+
+	if err = tmpl.Execute(f, data); err != nil {
+		return CliErrorGen(err, 1)
+	}
+
+	CliSuccessVerbose(fmt.Sprintf(success_message))
+
+	return nil
+}
 
 func GetCredentialPath() (string, error) {
 	var CREDENTIALS_FILE string
