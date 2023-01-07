@@ -496,11 +496,8 @@ func PushImage(c *cli.Context) error {
 	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
 	if err = pushImage.Exec(); pushImage.ExitCode() != 0 {
-		fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
 		return helper.CliErrorGen(errors.New("Failed to push the image"), 1)
 	}
-
-	fmt.Println(pushImage.StderrText(), pushImage.StdoutText(), pushImage.ExitCode())
 
 	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + namespace)
 
