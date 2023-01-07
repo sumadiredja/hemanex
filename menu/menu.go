@@ -23,9 +23,9 @@ import (
 const (
 	CREDENTIALS_TEMPLATES = `# Nexus Credentials
 nexus_host = "{{ .Host }}"
+nexus_host_port = "{{ .NexusPort }}"
 nexus_repository = "{{ .Repository }}"
 nexus_repository_port = "{{ .Port }}"
-nexus_host_port = "{{ .NexusPort }}"
 nexus_namespace = "{{ .Namespace }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
