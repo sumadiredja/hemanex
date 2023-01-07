@@ -292,10 +292,7 @@ func ListTagsByImage(c *cli.Context) error {
 		return helper.CliErrorGen(err, 1)
 	}
 	if imgName == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
+		return helper.ShowSubCommand("please provide image name", c)
 	}
 	tags, err := r.ListTagsByImage(imgName)
 
@@ -322,10 +319,7 @@ func ShowImageInfo(c *cli.Context) error {
 		return helper.CliErrorGen(err, 1)
 	}
 	if imgName == "" || tag == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
+		return helper.ShowSubCommand("please provide image name and tag", c)
 	}
 	manifest, err := r.ImageManifest(imgName, tag)
 	if err != nil {
@@ -345,12 +339,7 @@ func DeleteImage(c *cli.Context) error {
 	var tag = c.String("tag")
 	var keep = c.Int("keep")
 	if imgName == "" {
-		fmt.Fprintf(c.App.Writer, "You should specify the image name\n")
-		err := cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image name", c)
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
@@ -358,11 +347,7 @@ func DeleteImage(c *cli.Context) error {
 		}
 		if tag == "" {
 			if keep == 0 {
-				fmt.Fprintf(c.App.Writer, "You should either specify the tag or how many images you want to keep\n")
-				err = cli.ShowSubcommandHelp(c)
-				if err != nil {
-					return helper.CliErrorGen(err, 1)
-				}
+				return helper.ShowSubCommand("please provide image tag or how many images you want to keep", c)
 			} else {
 				tags, err := r.ListTagsByImage(imgName)
 				compareStringNumber := func(str1, str2 string) bool {
@@ -399,11 +384,7 @@ func ShowTotalImageSize(c *cli.Context) error {
 	var totalSize (int64) = 0
 
 	if imgName == "" {
-		err := cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image name", c)
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
@@ -451,36 +432,20 @@ func BuildImage(c *cli.Context) error {
 		namespace = c.String("namespace")
 	}
 	if tags == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image tags", c)
 	}
 	if cwd == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide dockerfile path in the arguments", c)
 	}
 
 	tag_split := strings.Split(tags, ":")
 	if len(tag_split) <= 1 {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image tags", c)
 	}
 	image_name = tag_split[0]
 	tag = tag_split[1]
 	if tag == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide correct image tags", c)
 	}
 	if port == "" {
 		port = r.RepositoryPort
@@ -507,11 +472,7 @@ func PushImage(c *cli.Context) error {
 	var namespace string
 
 	if imgName == "" {
-		err := cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image name", c)
 	}
 
 	r, err := registry.NewRegistry(c)
@@ -564,28 +525,16 @@ func DeleteImageLocal(c *cli.Context) error {
 	var port = r.RepositoryPort
 
 	if image_name == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image name", c)
 	}
 	name_split := strings.Split(image_name, ":")
 	img_name = name_split[0]
 	if len(name_split) <= 1 {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide image tags", c)
 	}
 	tag = name_split[1]
 	if tag == "" {
-		err = cli.ShowSubcommandHelp(c)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
-		}
-		return nil
+		return helper.ShowSubCommand("please provide correct image tags", c)
 	}
 	if c.Bool("force") {
 		force = "-f "
