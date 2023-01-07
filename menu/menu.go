@@ -451,7 +451,7 @@ func BuildImage(c *cli.Context) error {
 
 	}
 
-	helper.CliSuccessVerbose("Successfully built image " + image_name + " : " + tag + " with namespace " + namespace)
+	helper.CliSuccessVerbose("Successfully built image " + image_name + ":" + tag + " with namespace " + namespace)
 
 	return nil
 }
