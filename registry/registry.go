@@ -20,8 +20,9 @@ type Registry struct {
 	Host       string `toml:"nexus_host"`
 	Username   string `toml:"nexus_username"`
 	Password   string `toml:"nexus_password"`
-	Port       string `toml:"nexus_port"`
+	Port       string `toml:"nexus_repository_port"`
 	Repository string `toml:"nexus_repository"`
+	NexusPort  string `toml:"nexus_host_port"`
 	Namespace  string `toml:"nexus_namespace"`
 }
 
@@ -79,8 +80,13 @@ func NewRegistry(cli_context *cli.Context) (Registry, error) {
 
 func (r Registry) ListImages() ([]string, error) {
 	client := &http.Client{}
+	var host_port = ""
 
-	url := fmt.Sprintf("%s/repository/%s/v2/_catalog", r.Host, r.Repository)
+	if r.NexusPort != "443" && r.NexusPort != "80" {
+		host_port = ":" + r.NexusPort
+	}
+
+	url := fmt.Sprintf("%s%s/repository/%s/v2/_catalog", r.Host, host_port, r.Repository)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -107,8 +113,12 @@ func (r Registry) ListImages() ([]string, error) {
 
 func (r Registry) ListTagsByImage(image string) ([]string, error) {
 	client := &http.Client{}
+	var host_port = ""
 
-	url := fmt.Sprintf("%s/repository/%s/v2/%s/tags/list", r.Host, r.Repository, image)
+	if r.NexusPort != "443" && r.NexusPort != "80" {
+		host_port = ":" + r.NexusPort
+	}
+	url := fmt.Sprintf("%s%s/repository/%s/v2/%s/tags/list", r.Host, host_port, r.Repository, image)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -135,8 +145,13 @@ func (r Registry) ListTagsByImage(image string) ([]string, error) {
 func (r Registry) ImageManifest(image string, tag string) (ImageManifest, error) {
 	var imageManifest ImageManifest
 	client := &http.Client{}
+	var host_port = ""
 
-	url := fmt.Sprintf("%s/repository/%s/v2/%s/manifests/%s", r.Host, r.Repository, image, tag)
+	if r.NexusPort != "443" && r.NexusPort != "80" {
+		host_port = ":" + r.NexusPort
+	}
+
+	url := fmt.Sprintf("%s%s/repository/%s/v2/%s/manifests/%s", r.Host, host_port, r.Repository, image, tag)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return imageManifest, err
@@ -167,7 +182,13 @@ func (r Registry) DeleteImageByTag(image string, tag string) error {
 	}
 	client := &http.Client{}
 
-	url := fmt.Sprintf("%s/repository/%s/v2/%s/manifests/%s", r.Host, r.Repository, image, sha)
+	var host_port = ""
+
+	if r.NexusPort != "443" && r.NexusPort != "80" {
+		host_port = ":" + r.NexusPort
+	}
+
+	url := fmt.Sprintf("%s%s/repository/%s/v2/%s/manifests/%s", r.Host, host_port, r.Repository, image, sha)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
@@ -192,8 +213,13 @@ func (r Registry) DeleteImageByTag(image string, tag string) error {
 
 func (r Registry) getImageSHA(image string, tag string) (string, error) {
 	client := &http.Client{}
+	var host_port = ""
 
-	url := fmt.Sprintf("%s/repository/%s/v2/%s/manifests/%s", r.Host, r.Repository, image, tag)
+	if r.NexusPort != "443" && r.NexusPort != "80" {
+		host_port = ":" + r.NexusPort
+	}
+
+	url := fmt.Sprintf("%s%s/repository/%s/v2/%s/manifests/%s", r.Host, host_port, r.Repository, image, tag)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err

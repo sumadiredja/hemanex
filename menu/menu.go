@@ -24,7 +24,8 @@ const (
 	CREDENTIALS_TEMPLATES = `# Nexus Credentials
 nexus_host = "{{ .Host }}"
 nexus_repository = "{{ .Repository }}"
-nexus_port = "{{ .Port }}"
+nexus_repository_port = "{{ .Port }}"
+nexus_host_port = "{{ .NexusPort }}"
 nexus_namespace = "{{ .Namespace }}"
 nexus_username = "{{ .Username }}"
 nexus_password = "{{ .Password }}"
@@ -32,12 +33,12 @@ nexus_password = "{{ .Password }}"
 )
 
 func SetNexusCredentials(c *cli.Context) error {
-	var hostname, repository, username, password, namespace string
+	var hostname, repository, username, password, namespace, nexus_host_port string
 	var CREDENTIALS_FILE string
 	var err error
 	var tmpl *template.Template
 	var f *os.File
-	var port string = c.String("port")
+	var port string = c.String("repository-port")
 	var isInsecure bool = c.Bool("insecure-registry")
 	var skipTls string
 
@@ -52,7 +53,15 @@ func SetNexusCredentials(c *cli.Context) error {
 		}
 		return errors.New("Please provide https:// or http://")
 	})
-	port = helper.GetInputOrFlags(c.String("port"), "Port", func(input string) error {
+	nexus_host_port = helper.GetInputOrFlags(c.String("host-port"), "Host Port", func(input string) error {
+		_, err := strconv.Atoi(input)
+		if err != nil {
+			return errors.New("Invalid Port")
+		}
+		return nil
+	})
+
+	port = helper.GetInputOrFlags(c.String("repository-port"), "Repository Port", func(input string) error {
 		_, err := strconv.Atoi(input)
 		if err != nil {
 			return errors.New("Invalid Port")
@@ -103,6 +112,7 @@ func SetNexusCredentials(c *cli.Context) error {
 
 	data := struct {
 		Host       string
+		NexusPort  string
 		Port       string
 		Username   string
 		Password   string
@@ -110,6 +120,7 @@ func SetNexusCredentials(c *cli.Context) error {
 		Namespace  string
 	}{
 		hostname,
+		nexus_host_port,
 		port,
 		username,
 		password,
@@ -408,7 +419,7 @@ func ShowTotalImageSize(c *cli.Context) error {
 func BuildImage(c *cli.Context) error {
 	var image_name, tag string
 	cwd := c.Args().Get(0)
-	var port = c.String("port")
+	var port = c.String("repository-port")
 	tags := c.String("tags")
 	r, err := registry.NewRegistry(c)
 	if err != nil {
@@ -458,7 +469,7 @@ func BuildImage(c *cli.Context) error {
 
 func PushImage(c *cli.Context) error {
 	var imgName = c.Args().Get(0)
-	var port = c.String("port")
+	var port = c.String("repository-port")
 	var isInsecure = c.Bool("insecure-registry")
 	var skipTls string
 	var namespace string
@@ -535,8 +546,8 @@ func DeleteImageLocal(c *cli.Context) error {
 	if c.Bool("force") {
 		force = "-f "
 	}
-	if c.String("port") != "" {
-		port = c.String("port")
+	if c.String("repository-port") != "" {
+		port = c.String("repository-port")
 	}
 
 	prefix = fmt.Sprintf("%s:%s", strings.Split(r.Host, "://")[1], port)

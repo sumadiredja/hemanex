@@ -38,6 +38,10 @@ func CliConfig(app *cli.App) *cli.App {
 					Usage: "Nexus hostname",
 				},
 				cli.StringFlag{
+					Name:  "nexus-host-port, hp",
+					Usage: "Nexus host port",
+				},
+				cli.StringFlag{
 					Name:  "repository-name, r",
 					Usage: "Nexus repository name",
 				},
@@ -58,8 +62,8 @@ func CliConfig(app *cli.App) *cli.App {
 					Usage: "Ignore confirmation prompt",
 				},
 				cli.StringFlag{
-					Name:  "port",
-					Usage: "Nexus port",
+					Name:  "repository-port, rp",
+					Usage: "Nexus repository port",
 				},
 				cli.BoolFlag{
 					Name:  "insecure-registry, k",
