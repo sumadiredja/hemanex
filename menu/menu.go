@@ -33,14 +33,13 @@ nexus_password = "{{ .Password }}"
 )
 
 func SetNexusCredentials(c *cli.Context) error {
-	var hostname, repository, username, password, namespace, nexus_host_port string
+	var hostname, repository, username, password, namespace, nexus_host_port, port string
 	var CREDENTIALS_FILE string
 	var err error
 	var tmpl *template.Template
 	var f *os.File
 	var skipTls string
 
-	port := c.String("repository-port")
 	isInsecure := c.Bool("insecure-registry")
 
 	// CREDENTIALS_FILE, err := helper.GetCredentialPath()
@@ -359,7 +358,10 @@ func DeleteImage(c *cli.Context) error {
 		if tag == "" {
 			if keep == 0 {
 				fmt.Fprintf(c.App.Writer, "You should either specify the tag or how many images you want to keep\n")
-				cli.ShowSubcommandHelp(c)
+				err = cli.ShowSubcommandHelp(c)
+				if err != nil {
+					return helper.CliErrorGen(err, 1)
+				}
 			} else {
 				tags, err := r.ListTagsByImage(imgName)
 				compareStringNumber := func(str1, str2 string) bool {
@@ -396,7 +398,10 @@ func ShowTotalImageSize(c *cli.Context) error {
 	var totalSize (int64) = 0
 
 	if imgName == "" {
-		cli.ShowSubcommandHelp(c)
+		err := cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
@@ -444,23 +449,35 @@ func BuildImage(c *cli.Context) error {
 		namespace = c.String("namespace")
 	}
 	if tags == "" {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	if cwd == "" {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 
 	tag_split := strings.Split(tags, ":")
 	if len(tag_split) <= 1 {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	image_name = tag_split[0]
 	tag = tag_split[1]
 	if tag == "" {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	if port == "" {
@@ -488,7 +505,10 @@ func PushImage(c *cli.Context) error {
 	var namespace string
 
 	if imgName == "" {
-		cli.ShowSubcommandHelp(c)
+		err := cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 
@@ -542,18 +562,27 @@ func DeleteImageLocal(c *cli.Context) error {
 	var port = r.RepositoryPort
 
 	if image_name == "" {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	name_split := strings.Split(image_name, ":")
 	img_name = name_split[0]
 	if len(name_split) <= 1 {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	tag = name_split[1]
 	if tag == "" {
-		cli.ShowSubcommandHelp(c)
+		err = cli.ShowSubcommandHelp(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 		return nil
 	}
 	if c.Bool("force") {
@@ -625,11 +654,14 @@ func DeleteImageLocal(c *cli.Context) error {
 	}
 
 	_, selected_image, err := prompt.Run()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("error: error getting input from user"), 1)
+	}
 
 	cmd = fmt.Sprintf("docker rmi %s%s", force, selected_image)
 	_, err = exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		return helper.CliErrorGen(errors.New("error: error getting input from user"), 1)
+		return helper.CliErrorGen(errors.New("error: error image not found"), 1)
 	}
 	helper.CliSuccessVerbose("Successfully deleted image " + selected_image)
 

@@ -11,11 +11,11 @@ func GetCredentialPath() (string, error) {
 	if IsWindows() {
 		if _, err := os.Stat(os.Getenv("AppData") + "\\hemanex"); os.IsNotExist(err) {
 			if os.Mkdir(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", CliErrorGen(fmt.Errorf("Error: %s", err), 1)
+				return "", CliErrorGen(fmt.Errorf("error: %s", err), 1)
 			}
 
 			if os.Chmod(os.Getenv("AppData")+"\\hemanex", 0666) != nil {
-				return "", CliErrorGen(fmt.Errorf("Error: %s", err), 1)
+				return "", CliErrorGen(fmt.Errorf("error: %s", err), 1)
 			}
 		}
 		CREDENTIALS_FILE = os.Getenv("AppData") + "\\hemanex" + "\\.credentials"
