@@ -451,7 +451,7 @@ func BuildImage(c *cli.Context) error {
 		return nil
 	}
 	if port == "" {
-		port = r.Port
+		port = r.RepositoryPort
 	}
 	host := strings.Split(r.Host, "://")[1]
 	command := fmt.Sprintf("docker build -t %s:%s/%s/%s:%s %s", host, port, namespace, image_name, tag, cwd)
@@ -490,7 +490,7 @@ func PushImage(c *cli.Context) error {
 	}
 
 	if port == "" {
-		port = r.Port
+		port = r.RepositoryPort
 	}
 
 	if isInsecure {
@@ -526,7 +526,7 @@ func DeleteImageLocal(c *cli.Context) error {
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
 	}
-	var port = r.Port
+	var port = r.RepositoryPort
 
 	if image_name == "" {
 		cli.ShowSubcommandHelp(c)

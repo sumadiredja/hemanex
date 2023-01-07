@@ -17,13 +17,13 @@ import (
 const ACCEPT_HEADER = "application/vnd.docker.distribution.manifest.v2+json"
 
 type Registry struct {
-	Host       string `toml:"nexus_host"`
-	Username   string `toml:"nexus_username"`
-	Password   string `toml:"nexus_password"`
-	Port       string `toml:"nexus_repository_port"`
-	Repository string `toml:"nexus_repository"`
-	NexusPort  string `toml:"nexus_host_port"`
-	Namespace  string `toml:"nexus_namespace"`
+	Host           string `toml:"nexus_host"`
+	Username       string `toml:"nexus_username"`
+	Password       string `toml:"nexus_password"`
+	RepositoryPort string `toml:"nexus_repository_port"`
+	Repository     string `toml:"nexus_repository"`
+	NexusPort      string `toml:"nexus_host_port"`
+	Namespace      string `toml:"nexus_namespace"`
 }
 
 type Repositories struct {
