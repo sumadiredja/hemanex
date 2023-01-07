@@ -7,10 +7,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"hemanex/registry"
+	"github.com/sumadiredja/hemanex/registry"
 
-	helper "hemanex/helper"
-	validator "hemanex/validator"
+	helper "github.com/sumadiredja/hemanex/helper"
+	validator "github.com/sumadiredja/hemanex/validator"
 
 	b64 "encoding/base64"
 

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	helper "hemanex/helper"
+	helper "github.com/sumadiredja/hemanex/helper"
 
 	"github.com/BurntSushi/toml"
 	"github.com/urfave/cli"

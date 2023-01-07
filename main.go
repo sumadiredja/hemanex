@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	config "hemanex/config"
+	config "github.com/sumadiredja/hemanex/config"
 
 	"github.com/urfave/cli"
 )

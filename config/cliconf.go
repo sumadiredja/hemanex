@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 
-	helper "hemanex/helper"
-	menu "hemanex/menu"
+	helper "github.com/sumadiredja/hemanex/helper"
+	menu "github.com/sumadiredja/hemanex/menu"
 
 	"github.com/urfave/cli"
 )
