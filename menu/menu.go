@@ -350,6 +350,7 @@ func DeleteImage(c *cli.Context) error {
 		if err != nil {
 			return helper.CliErrorGen(err, 1)
 		}
+		return nil
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
@@ -402,6 +403,7 @@ func ShowTotalImageSize(c *cli.Context) error {
 		if err != nil {
 			return helper.CliErrorGen(err, 1)
 		}
+		return nil
 	} else {
 		r, err := registry.NewRegistry(c)
 		if err != nil {
