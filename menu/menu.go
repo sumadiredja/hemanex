@@ -61,18 +61,18 @@ func SetNexusCredentials(c *cli.Context) error {
 		return nil
 	})
 
+	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", func(input string) error {
+		if len(input) != 0 {
+			return nil
+		}
+		return errors.New("Please provide the repository-name")
+	})
 	port = helper.GetInputOrFlags(c.String("repository-port"), "Repository Port", func(input string) error {
 		_, err := strconv.Atoi(input)
 		if err != nil {
 			return errors.New("Invalid Port")
 		}
 		return nil
-	})
-	repository = helper.GetInputOrFlags(c.String("repository-name"), "Repository Name", func(input string) error {
-		if len(input) != 0 {
-			return nil
-		}
-		return errors.New("Please provide the repository-name")
 	})
 	namespace = helper.GetInputOrFlags(c.String("namespace"), "Namespace", func(input string) error {
 		if len(input) != 0 {
