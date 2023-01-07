@@ -500,14 +500,14 @@ func PushImage(c *cli.Context) error {
 	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + port + " -u " + r.Username + " -p " + r.Password + skipTls)
 	login := subprocess.New(cmdLogin, subprocess.Shell)
 	if err = login.Exec(); login.ExitCode() != 0 {
-		return helper.CliErrorGen(errors.New("Failed to login to docker"), 1)
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot login to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
 	}
 
 	cmdPushImage := fmt.Sprintf("docker push " + strings.Split(r.Host, "//")[1] + ":" + port + "/" + namespace + "/" + imgName + skipTls)
 	pushImage := subprocess.New(cmdPushImage, subprocess.Shell)
 
 	if err = pushImage.Exec(); pushImage.ExitCode() != 0 {
-		return helper.CliErrorGen(errors.New("Failed to push the image"), 1)
+		return helper.CliErrorGen(fmt.Errorf("Error: Cannot push to Nexus,\nautorization failed or registry is using self signed certificate\n\nif the registry self signed\nplease add the registry to docker daemon.json.\nplease read this https://docs.docker.com/registry/insecure/\n\nif you using podman please provide -k flag"), 1)
 	}
 
 	helper.CliSuccessVerbose("Successfully pushed image " + imgName + " to " + r.Host + " namespace " + namespace)

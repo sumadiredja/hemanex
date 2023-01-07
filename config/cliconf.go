@@ -249,11 +249,11 @@ func CliConfig(app *cli.App) *cli.App {
 					Flags: []cli.Flag{
 						cli.BoolFlag{
 							Name:  "force, f",
-							Usage: "Force delete",
+							Usage: "Force delete container image",
 						},
 						cli.StringFlag{
 							Name:  "port, p",
-							Usage: "Nexus registry port",
+							Usage: "Nexus repository port",
 						},
 						cli.BoolFlag{
 							Name:  "all, a",
