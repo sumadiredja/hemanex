@@ -1,12 +1,15 @@
 {
   "name": "docs",
   "version": "0.0.0",
+  "homepage": "https://sumadiredja.github.io/hemanex",
   "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --fix --ignore-path .gitignore"
+    "lint": "eslint . --fix --ignore-path .gitignore",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "@mdi/font": "7.0.96",
@@ -25,6 +28,7 @@
     "@vue/eslint-config-typescript": "^11.0.0",
     "eslint": "^8.22.0",
     "eslint-plugin-vue": "^9.3.0",
+    "gh-pages": "^4.0.0",
     "sass": "^1.55.0",
     "typescript": "^4.0.0",
     "vite": "^3.1.9",
