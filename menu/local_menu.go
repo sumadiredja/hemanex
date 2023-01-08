@@ -294,5 +294,4 @@ func ImageRetag(c *cli.Context) error {
 	helper.CliSuccessVerbose("Successfully created tag " + target_image + " from image " + source_image)
 
 	return nil
-
 }
