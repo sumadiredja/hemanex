@@ -35,6 +35,9 @@ func ListTagsByImage(c *cli.Context) error {
 	if imgName == "" {
 		return helper.ShowSubCommand("please provide image name", c)
 	}
+
+	imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
+
 	tags, err := r.ListTagsByImage(imgName)
 
 	compareStringNumber := func(str1, str2 string) bool {
@@ -62,6 +65,9 @@ func ShowImageInfo(c *cli.Context) error {
 	if imgName == "" || tag == "" {
 		return helper.ShowSubCommand("please provide image name and tag", c)
 	}
+
+	imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
+
 	manifest, err := r.ImageManifest(imgName, tag)
 	if err != nil {
 		return helper.CliErrorGen(err, 1)
@@ -86,6 +92,7 @@ func DeleteImage(c *cli.Context) error {
 		if err != nil {
 			return helper.CliErrorGen(err, 1)
 		}
+		imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
 		if tag == "" {
 			if keep == 0 {
 				return helper.ShowSubCommand("please provide image tag or how many images you want to keep", c)
@@ -131,6 +138,7 @@ func ShowTotalImageSize(c *cli.Context) error {
 		if err != nil {
 			return helper.CliErrorGen(err, 1)
 		}
+		imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
 
 		tags, err := r.ListTagsByImage(imgName)
 		if err != nil {
