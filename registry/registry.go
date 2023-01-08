@@ -218,7 +218,7 @@ func (r Registry) DeleteImageByTag(image string, tag string) error {
 		return helper.CliErrorGen(fmt.Errorf("HTTP Code: %d", resp.StatusCode), 1)
 	}
 
-	helper.CliSuccessVerbose(fmt.Sprintf("%s:%s has been successful deleted\n", image, tag))
+	helper.CliSuccessVerbose(fmt.Sprintf("%s:%s has been successful deleted", image, tag))
 
 	return nil
 }
