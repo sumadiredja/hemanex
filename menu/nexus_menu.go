@@ -2,6 +2,7 @@ package menu
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sumadiredja/hemanex/registry"
 
@@ -82,9 +83,46 @@ func ShowImageInfo(c *cli.Context) error {
 }
 
 func DeleteImage(c *cli.Context) error {
-	var imgName = c.String("name")
-	var tag = c.String("tag")
-	var keep = c.Int("keep")
+	var images = c.Args()
+	var isDifferentNamespace = c.Bool("namespace")
+
+	if len(images) == 0 {
+		return helper.ShowSubCommand("please provide image name", c)
+	} else {
+		r, err := registry.NewRegistry(c)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
+		if !isDifferentNamespace {
+			for _, image := range images {
+				imageName := r.Namespace + "/" + strings.Split(image, ":")[0]
+				imageTag := strings.Split(image, ":")[1]
+				err = r.DeleteImageByTag(imageName, imageTag)
+
+				if err != nil {
+					return helper.CliErrorGen(err, 1)
+				}
+			}
+		} else {
+			for _, image := range images {
+				imageName := strings.Split(image, ":")[0]
+				imageTag := strings.Split(image, ":")[1]
+				err = r.DeleteImageByTag(imageName, imageTag)
+
+				if err != nil {
+					return helper.CliErrorGen(err, 1)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func DeleteImageKeep(c *cli.Context) error {
+	var imgName = c.Args().Get(0)
+	var remains = c.Int("remains")
+	var keepTag = c.String("keep-tag")
+
 	if imgName == "" {
 		return helper.ShowSubCommand("please provide image name", c)
 	} else {
@@ -92,9 +130,9 @@ func DeleteImage(c *cli.Context) error {
 		if err != nil {
 			return helper.CliErrorGen(err, 1)
 		}
-		imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
-		if tag == "" {
-			if keep == 0 {
+		var imgName = helper.CheckFlagsStringExist(c.String("namespace"), r.Namespace) + "/" + imgName
+		if keepTag == "" {
+			if remains == 0 {
 				return helper.ShowSubCommand("please provide image tag or how many images you want to keep", c)
 			} else {
 				tags, err := r.ListTagsByImage(imgName)
@@ -105,8 +143,8 @@ func DeleteImage(c *cli.Context) error {
 				if err != nil {
 					return helper.CliErrorGen(err, 1)
 				}
-				if len(tags) >= keep {
-					for _, tag := range tags[:len(tags)-keep] {
+				if len(tags) >= remains {
+					for _, tag := range tags[:len(tags)-1] {
 						fmt.Printf("%s:%s image will be deleted ...\n", imgName, tag)
 						err = r.DeleteImageByTag(imgName, tag)
 						if err != nil {
@@ -118,9 +156,25 @@ func DeleteImage(c *cli.Context) error {
 				}
 			}
 		} else {
-			err = r.DeleteImageByTag(imgName, tag)
+			var keepIndex int
+			tags, err := r.ListTagsByImage(imgName)
 			if err != nil {
-				return helper.CliErrorGen(err, 1)
+				return cli.NewExitError(err.Error(), 1)
+			}
+			for i, tag := range tags {
+				if tag == keepTag {
+					keepIndex = i
+				}
+			}
+			temp := tags[keepIndex]
+			tags[keepIndex] = tags[len(tags)-1]
+			tags[len(tags)-1] = temp
+			deletedTags := tags[:len(tags)-1]
+			for _, tag := range deletedTags {
+				err = r.DeleteImageByTag(imgName, tag)
+				if err != nil {
+					return helper.CliErrorGen(err, 1)
+				}
 			}
 		}
 	}

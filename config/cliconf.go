@@ -193,19 +193,34 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:    "delete",
 					Aliases: []string{"del"},
 					Usage:   "Delete an image",
+					Subcommands: []cli.Command{
+						{
+							Name:    "keep",
+							Aliases: []string{"kp"},
+							Usage:   "Keep the latest version of an image",
+							Flags: []cli.Flag{
+								cli.StringFlag{
+									Name: "keep-tag, ktg",
+								},
+								cli.StringFlag{
+									Name:  "namespace, ns",
+									Usage: "Defined Namespace for delete image in multiple namespace",
+								},
+								cli.IntFlag{
+									Name:  "remains",
+									Value: 0,
+									Usage: "Keep n latest images <img_name> --remains n",
+								},
+							},
+							Action: func(c *cli.Context) error {
+								return menu.DeleteImageKeep(c)
+							},
+						},
+					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name: "name, n",
-						},
-						cli.StringFlag{
-							Name: "tag, t",
-						},
-						cli.StringFlag{
-							Name: "keep, kp",
-						},
-						cli.StringFlag{
+						cli.BoolFlag{
 							Name:  "namespace, ns",
-							Usage: "Nexus namespace",
+							Usage: "Defined Namespace for delete image in multiple namespace",
 						},
 						cli.BoolFlag{
 							Name:  "insecure-registry, k",
