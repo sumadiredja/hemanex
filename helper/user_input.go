@@ -9,6 +9,13 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+func CheckFlagsStringExist(flags string, repository_data string) string {
+	if flags != "" {
+		return flags
+	}
+	return repository_data
+}
+
 func GetInputOrFlags(flags string, input string, validation func(input string) error) string {
 	var user_input string
 	if flags != "" {
@@ -21,7 +28,7 @@ func GetInputOrFlags(flags string, input string, validation func(input string) e
 		result, err := prompt.Run()
 
 		if err != nil {
-			fmt.Print(CliErrorGen(fmt.Errorf("Error : %v\n", "error getting input from user"), 1))
+			fmt.Print(CliErrorGen(fmt.Errorf("error : %v", "error getting input from user"), 1))
 			os.Exit(1)
 		}
 
@@ -47,7 +54,7 @@ func GetPassword(flags string, validation func(input string) error) (string, err
 		result, err := prompt.Run()
 
 		if err != nil {
-			fmt.Print(CliErrorGen(fmt.Errorf("Error : %v\n", "error getting input from user"), 1))
+			fmt.Print(CliErrorGen(fmt.Errorf("error : %v", "error getting input from user"), 1))
 			os.Exit(1)
 		}
 		bytePassword = []byte(result)

@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 
-	helper "hemanex/helper"
-	menu "hemanex/menu"
+	helper "github.com/sumadiredja/hemanex/helper"
+	menu "github.com/sumadiredja/hemanex/menu"
 
 	"github.com/urfave/cli"
 )
@@ -291,7 +291,7 @@ func CliConfig(app *cli.App) *cli.App {
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		// fmt.Fprintf(c.App.Writer, "Wrong command %q!\n", command)
 
-		fmt.Println(helper.CliCriticalGen(fmt.Errorf("Command %q not found!", command), 1))
+		fmt.Println(helper.CliCriticalGen(fmt.Errorf("command %q not found", command), 1))
 	}
 
 	return app

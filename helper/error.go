@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/urfave/cli"
@@ -13,13 +12,23 @@ const colorGreen = "\033[0;32m"
 
 const colorNone = "\033[0m"
 
+func ShowSubCommand(err_message string, c *cli.Context) error {
+	fmt.Println(colorRed + err_message + colorNone)
+	fmt.Println()
+	err := cli.ShowSubcommandHelp(c)
+	if err != nil {
+		return CliErrorGen(err, 1)
+	}
+	return nil
+}
+
 func CliErrorGen(err error, status int) *cli.ExitError {
-	return cli.NewExitError(errors.New(fmt.Sprintf("%s%s%s", colorRed, err, colorNone)), status)
+	return cli.NewExitError(fmt.Errorf("%s%s%s", colorRed, err, colorNone), status)
 }
 
 func CliCriticalGen(err error, status int) *cli.ExitError {
 
-	return cli.NewExitError(errors.New(fmt.Sprintf("%s[Critial] %s%s", colorRed, err, colorNone)), status)
+	return cli.NewExitError(fmt.Errorf("%s[Critial] %s%s", colorRed, err, colorNone), status)
 }
 
 func CliInfoVerbose(message string) {

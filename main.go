@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	config "hemanex/config"
+	config "github.com/sumadiredja/hemanex/config"
 
 	"github.com/urfave/cli"
 )
@@ -11,5 +11,8 @@ import (
 func main() {
 	app := cli.NewApp()
 	app = config.CliConfig(app)
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		panic(err)
+	}
 }
