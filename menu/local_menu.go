@@ -196,3 +196,103 @@ func DeleteImageLocal(c *cli.Context) error {
 
 	return nil
 }
+
+func ImageRetag(c *cli.Context) error {
+	var err error
+	var source_prefix, target_prefix string
+	r, err := registry.NewRegistry(c)
+	if err != nil {
+		return helper.CliErrorGen(err, 1)
+	}
+
+	repository_port_source := helper.CheckFlagsStringExist(c.String("port-source"), r.RepositoryPort)
+	repository_port_target := helper.CheckFlagsStringExist(c.String("port-target"), r.RepositoryPort)
+	namespace_source := helper.CheckFlagsStringExist(c.String("namespace-source"), r.Namespace)
+	namespace_target := helper.CheckFlagsStringExist(c.String("namespace-targer"), r.Namespace)
+
+	source_image := c.Args().Get(0)
+	if source_image == "" {
+		return helper.ShowSubCommand("please provide source image name", c)
+	}
+
+	target_image := c.Args().Get(1)
+	if target_image == "" {
+		return helper.ShowSubCommand("please provide target image name", c)
+	}
+
+	source_split := strings.Split(source_image, ":")
+	if len(source_split) <= 1 {
+		return helper.ShowSubCommand("please provide image tags", c)
+	}
+	if source_split[1] == "" {
+		return helper.ShowSubCommand("please provide correct image tags", c)
+	}
+
+	target_split := strings.Split(target_image, ":")
+	if len(target_split) <= 1 {
+		return helper.ShowSubCommand("please provide image tags", c)
+	}
+	if target_split[1] == "" {
+		return helper.ShowSubCommand("please provide correct image tags", c)
+	}
+
+	source_prefix = strings.Split(r.Host, "://")[1] + ":" + repository_port_source
+	target_prefix = strings.Split(r.Host, "://")[1] + ":" + repository_port_target
+
+	cmd := fmt.Sprintf(`docker images --format="{{.Repository}} {{.Tag}}" | grep "%s" | grep "%s/%s" | grep "%s"`, source_prefix, namespace_source, source_split[0], source_split[1])
+	out, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("No image found with name "+source_image), 1)
+	}
+
+	list := strings.Split(strings.ReplaceAll(string(out), "\rn", "\n"), "\n")
+	if list[len(list)-1] == "" {
+		list = list[0 : len(list)-1]
+	}
+
+	if len(list) == 1 {
+		image := strings.ReplaceAll(list[0], " ", ":")
+		cmd = fmt.Sprintf("docker tag %s %s/%s/%s", image, target_prefix, namespace_target, target_image)
+		if _, err := exec.Command("bash", "-c", cmd).Output(); err != nil {
+			return helper.CliErrorGen(errors.New("error: error getting input from user"), 1)
+		}
+		helper.CliSuccessVerbose("Successfully created tag " + target_image + " from image " + source_image)
+		return nil
+	}
+
+	var list_images []string
+	for i := 0; i < len(list)-1; i++ {
+		hehe := strings.Split(list[i], " ")
+		image := strings.Join(hehe, ":")
+		list_images = append(list_images, image)
+	}
+
+	template := &promptui.SelectTemplates{
+		Active:   "🚀 {{ . | cyan }}",
+		Selected: "Image Selected: {{ . | yellow }}",
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Source Image",
+		Items:     list_images,
+		Templates: template,
+		Searcher: func(input string, index int) bool {
+			return strings.Contains(list_images[index], input)
+		},
+	}
+
+	_, selected_image, err := prompt.Run()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("error: error getting input from user"), 1)
+	}
+
+	cmd = fmt.Sprintf("docker tag %s %s/%s/%s", selected_image, target_prefix, namespace_target, target_image)
+	_, err = exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("error: error image not found"), 1)
+	}
+	helper.CliSuccessVerbose("Successfully created tag " + target_image + " from image " + source_image)
+
+	return nil
+
+}

@@ -266,6 +266,32 @@ func CliConfig(app *cli.App) *cli.App {
 						return menu.DeleteImageLocal(c)
 					},
 				},
+				{
+					Name:    "tag",
+					Aliases: []string{"tg"},
+					Usage:   "Create a tag target_image that refers to source_image: hemanex image-local tag <source_image>:<tag> <target_image>:<tag>",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "port-source, ps",
+							Usage: "Nexus repository port",
+						},
+						cli.StringFlag{
+							Name:  "port-target, pt",
+							Usage: "Nexus repository port",
+						},
+						cli.StringFlag{
+							Name:  "namespace-source, nss",
+							Usage: "Nexus repository namespace",
+						},
+						cli.StringFlag{
+							Name:  "namespace-target, nst",
+							Usage: "Nexus repository namespace",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						return menu.ImageRetag(c)
+					},
+				},
 			},
 		},
 		{
