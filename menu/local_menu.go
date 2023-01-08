@@ -12,17 +12,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-func CheckToml(c *cli.Context) error {
-	r, err := registry.NewRegistry(c)
-	if err != nil {
-		return helper.CliErrorGen(err, 1)
-
-	}
-	fmt.Println(r.Host, r.Password, r.Repository, r.Username, r.Namespace)
-
-	return nil
-}
-
 func BuildImage(c *cli.Context) error {
 	var image_name, tag string
 	cwd := c.Args().Get(0)

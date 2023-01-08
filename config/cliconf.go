@@ -103,20 +103,6 @@ func CliConfig(app *cli.App) *cli.App {
 			},
 		},
 		{
-			Name:    "test",
-			Usage:   "testing root",
-			Aliases: []string{"t"},
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "insecure-registry, k",
-					Usage: "Turn on insecure registries",
-				},
-			},
-			Action: func(c *cli.Context) error {
-				return menu.CheckToml(c)
-			},
-		},
-		{
 			Name:    "build",
 			Usage:   "Building image in nexus repository",
 			Aliases: []string{"b"},
@@ -167,7 +153,7 @@ func CliConfig(app *cli.App) *cli.App {
 							Usage: "List tags by image name",
 						},
 						cli.StringFlag{
-							Name:  "namespace, n",
+							Name:  "namespace, ns",
 							Usage: "Nexus namespace",
 						},
 						cli.BoolFlag{
@@ -191,7 +177,7 @@ func CliConfig(app *cli.App) *cli.App {
 							Name: "tag, t",
 						},
 						cli.StringFlag{
-							Name:  "namespace, n",
+							Name:  "namespace, ns",
 							Usage: "Nexus namespace",
 						},
 						cli.BoolFlag{
@@ -218,7 +204,7 @@ func CliConfig(app *cli.App) *cli.App {
 							Name: "keep, kp",
 						},
 						cli.StringFlag{
-							Name:  "namespace, n",
+							Name:  "namespace, ns",
 							Usage: "Nexus namespace",
 						},
 						cli.BoolFlag{
@@ -239,7 +225,7 @@ func CliConfig(app *cli.App) *cli.App {
 							Name: "name, n",
 						},
 						cli.StringFlag{
-							Name:  "namespace, n",
+							Name:  "namespace, ns",
 							Usage: "Nexus namespace",
 						},
 						cli.BoolFlag{
