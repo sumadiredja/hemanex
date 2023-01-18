@@ -211,6 +211,10 @@ func CliConfig(app *cli.App) *cli.App {
 									Value: 0,
 									Usage: "Keep n latest images <img_name> --remains n",
 								},
+								cli.BoolFlag{
+									Name:  "insecure-registry, k",
+									Usage: "Turn on insecure registries",
+								},
 							},
 							Action: func(c *cli.Context) error {
 								return menu.DeleteImageKeep(c)
