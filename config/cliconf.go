@@ -288,7 +288,7 @@ func CliConfig(app *cli.App) *cli.App {
 				{
 					Name:    "tag",
 					Aliases: []string{"tg"},
-					Usage:   "Create a tag target_image that refers to source_image: hemanex image-local tag <source_image>:<tag> <target_image>:<tag>",
+					Usage:   "Replace a tag target_image that refers to source_image: hemanex image-local tag <source_image>:<tag> <target_image>:<tag>",
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "port-source, ps",
