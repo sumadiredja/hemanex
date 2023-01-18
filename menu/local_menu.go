@@ -141,6 +141,9 @@ func DeleteImageLocal(c *cli.Context) error {
 	if len(list) == 1 {
 		image := strings.ReplaceAll(list[0], " ", ":")
 		err = helper.DeleteImageCommand(image, force)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -151,6 +154,9 @@ func DeleteImageLocal(c *cli.Context) error {
 		list_images = append(list_images, image)
 		if c.Bool("all") {
 			err = helper.DeleteImageCommand(image, force)
+			if err != nil {
+				return err
+			}
 
 		}
 
@@ -180,6 +186,9 @@ func DeleteImageLocal(c *cli.Context) error {
 	}
 
 	err = helper.DeleteImageCommand(selected_image, force)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -344,6 +353,9 @@ func ImageRetag(c *cli.Context) error {
 		}
 		helper.CliSuccessVerbose("Successfully created tag " + target_image + " from image " + source_image)
 		err = helper.DeleteImageCommand(image, "")
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -380,6 +392,9 @@ func ImageRetag(c *cli.Context) error {
 	}
 	helper.CliSuccessVerbose("Successfully created tag " + target_image + " from image " + source_image)
 	err = helper.DeleteImageCommand(selected_image, "")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
