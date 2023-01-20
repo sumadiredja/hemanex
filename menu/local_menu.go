@@ -412,7 +412,10 @@ func DeleteNoneImageLocal(c *cli.Context) error {
 	if c.Bool("force") {
 		force = "-f "
 	}
-	helper.DeleteImageCommand(res, force)
+	err = helper.DeleteImageCommand(res, force)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
