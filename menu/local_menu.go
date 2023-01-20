@@ -398,3 +398,37 @@ func ImageRetag(c *cli.Context) error {
 
 	return nil
 }
+
+func DeleteNoneImageLocal(c *cli.Context) error {
+	var force = ""
+
+	res, err := helper.GetAllNoneImageID()
+	if err != nil {
+		helper.CliInfoVerbose("No <none> image found")
+		return nil
+		// return helper.CliErrorGen(errors.New("error: error no <none> image"), 1)
+	}
+
+	if c.Bool("force") {
+		force = "-f "
+	}
+	helper.DeleteImageCommand(res, force)
+
+	return nil
+}
+
+func PruneImageLocal(c *cli.Context) error {
+	var force = ""
+	if c.Bool("force") {
+		force = " -f"
+	}
+	var cmd = "docker image prune" + force
+	_, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return helper.CliErrorGen(errors.New("error: error getting input from user"), 1)
+	}
+
+	helper.CliSuccessVerbose("Successfully deleted all dangling images")
+
+	return nil
+}
