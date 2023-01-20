@@ -286,6 +286,34 @@ func CliConfig(app *cli.App) *cli.App {
 					},
 				},
 				{
+					Name:    "prune",
+					Aliases: []string{"pru"},
+					Usage:   "Delete all dangling images usage: hemanex image-local prune",
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "force, f",
+							Usage: "Force remove all dangling image",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						return menu.PruneImageLocal(c)
+					},
+				},
+				{
+					Name:    "delete-none",
+					Aliases: []string{"dn"},
+					Usage:   "Delete all <none> images usage: hemanex image-local delete-none",
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "force, f",
+							Usage: "Force delete all <none> image",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						return menu.DeleteNoneImageLocal(c)
+					},
+				},
+				{
 					Name:    "tag",
 					Aliases: []string{"tg"},
 					Usage:   "Replace a tag target_image that refers to source_image: hemanex image-local tag <source_image>:<tag> <target_image>:<tag>",
