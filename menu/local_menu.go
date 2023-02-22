@@ -60,6 +60,7 @@ func BuildImage(c *cli.Context) error {
 func PushImage(c *cli.Context) error {
 	var skipTls string
 	var imgName = c.Args().Get(0)
+	var isForce = c.Bool("force")
 
 	r, err := registry.NewRegistry(c)
 	if err != nil {
@@ -77,6 +78,15 @@ func PushImage(c *cli.Context) error {
 
 	if isInsecure {
 		skipTls = " --tls-verify=false"
+	}
+
+	if isForce {
+		var image_name = namespace + "/" + strings.Split(imgName, ":")[0]
+		var image_tag = strings.Split(imgName, ":")[1]
+		err = r.DeleteImageByTag(image_name, image_tag)
+		if err != nil {
+			return helper.CliErrorGen(err, 1)
+		}
 	}
 
 	cmdLogin := fmt.Sprintf("docker login " + strings.Split(r.Host, "//")[1] + ":" + repository_port + " -u " + r.Username + " -p " + r.Password + skipTls)
