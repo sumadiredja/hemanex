@@ -383,6 +383,10 @@ func CliConfig(app *cli.App) *cli.App {
 					Name:  "namespace, n",
 					Usage: "Overwrite namespace",
 				},
+				cli.BoolFlag{
+					Name:  "force, f",
+					Usage: "Forcing push by deleting exsisting image",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return menu.PushImage(c)
