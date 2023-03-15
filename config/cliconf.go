@@ -108,7 +108,7 @@ func CliConfig(app *cli.App) *cli.App {
 			Aliases: []string{"b"},
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "port, p",
+					Name:  "repository-port, rp",
 					Usage: "Image port",
 				},
 				cli.StringFlag{
