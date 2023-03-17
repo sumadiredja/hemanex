@@ -83,9 +83,12 @@ func PushImage(c *cli.Context) error {
 	if isForce {
 		var image_name = namespace + "/" + strings.Split(imgName, ":")[0]
 		var image_tag = strings.Split(imgName, ":")[1]
-		err = r.DeleteImageByTag(image_name, image_tag)
-		if err != nil {
-			return helper.CliErrorGen(err, 1)
+		_, err := r.GetImageSHA(image_name, image_tag)
+		if err == nil {
+			err = r.DeleteImageByTag(image_name, image_tag)
+			if err != nil {
+				return helper.CliErrorGen(err, 1)
+			}
 		}
 	}
 
